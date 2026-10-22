@@ -1,0 +1,13 @@
+{
+  "name": "imp-agent-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check web/app.js && node --check web/lib.js && node --check web/personas.js && node --check scripts/verify-deployment.mjs",
+    "verify:deployment": "node scripts/verify-deployment.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}

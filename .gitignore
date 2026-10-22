@@ -218,3 +218,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local deployment environment, package backups, and delegated credentials
+.deploy-venv/
+.azure/*.zip
+**/token_cache.bin
+node_modules/
+/*-app.zip
+.swa/
+.tools/
