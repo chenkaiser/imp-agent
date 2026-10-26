@@ -30,11 +30,58 @@ jobs:
       - name: Check JavaScript syntax
         run: npm run check
       - name: Run authentication, persona, and chat tests
-        run: npm test
+        run: npm run test:unit
+      - name: Package browser widget
+        run: npm run package:widget
+      - name: Package Chrome Web Store draft
+        run: npm run package:store
+      - name: Preserve installable widget pilot
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ask-imp-widget
+          path: dist/ask-imp-widget.zip
+          if-no-files-found: error
+          retention-days: 30
+      - name: Preserve Web Store draft package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ask-imp-webstore-draft
+          path: dist/ask-imp-webstore.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  persona-queries:
+    name: Persona query browser contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Test queries and clarification for all five personas
+        run: |
+          mkdir -p test-results
+          npm run test:queries:ci
+      - name: Preserve query test reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: persona-query-browser-results
+          path: test-results/*.xml
+          if-no-files-found: error
+          retention-days: 14
 
   deploy:
     name: Deploy to ask.impops.work
-    needs: test
+    needs: [test, persona-queries]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15

@@ -1,0 +1,23 @@
+/* Same application and permissions, sized for a browser side panel. */
+html,body{height:100%;min-width:300px}
+.workspace{grid-template-columns:1fr;height:100dvh}
+.workspace>aside{display:none}
+.chat-main{min-width:0;height:100dvh}
+.chat-main>header{padding:10px 14px;min-height:58px;height:auto;gap:8px}
+.header-actions{display:flex;gap:8px}.header-actions button{display:inline-flex}
+.secure-label{display:none}.mobile-brand{display:block;font-size:14px}
+.header-label{font-size:11px}
+.transcript{padding:18px 14px}.welcome{padding:20px 0;max-width:100%}
+.welcome h1{font-size:28px}.welcome-symbol{margin-bottom:14px}
+.suggestions{grid-template-columns:1fr;gap:8px}.suggestions button{padding:12px}
+.messages{max-width:100%;padding:0}.message{padding:18px 0}
+.message-body{font-size:14px;overflow-wrap:anywhere}
+.composer-area{padding:10px 12px}.composer-note{font-size:10px}.composer-note span{display:none}
+.login-screen{padding:20px;min-height:100dvh}.login-brand{padding:10px 0}
+.login-card{padding:24px 0;max-width:100%}.login-card h1{font-size:32px}
+footer{padding:14px;font-size:9px}footer span{display:none}
+.persona-header{padding:0 16px;height:68px}.persona-main{padding:14px 16px}
+.persona-main h1{font-size:26px}.persona-grid{grid-template-columns:1fr;gap:10px}
+.persona-card{padding:16px}.persona-card h2{font-size:21px;min-height:0;margin:10px 0}
+.persona-card p{min-height:0}.persona-enter{margin-top:10px}
+.answer-table-scroll{max-width:100%;overflow-x:auto}

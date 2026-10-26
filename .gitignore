@@ -227,3 +227,4 @@ node_modules/
 /*-app.zip
 .swa/
 .tools/
+test-results/

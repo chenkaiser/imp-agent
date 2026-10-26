@@ -7,6 +7,7 @@
   <title>IMP Agent</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/kpi.css">
   <script type="module" src="/app.js"></script>
 </head>
 <body>
@@ -28,13 +29,15 @@
       <span class="eyebrow">MAKE IT YOUR WORKSPACE</span>
       <h1>How are you working today?</h1>
       <p>Welcome, <span id="persona-user"></span>. Choose a persona to shape your assistant.</p>
+      <p id="persona-status" class="status" role="status" aria-live="polite"></p>
       <div class="persona-grid">
-        <button class="persona-card" data-persona="sales"><span class="persona-number">01 <span aria-hidden="true">↗</span></span><h2>Sales<br>Representative</h2><p>Prepare for customer conversations with item availability and order details.</p><span class="persona-tags">AVAILABILITY · SALES ORDERS</span><span class="persona-enter">Open workspace →</span></button>
-        <button class="persona-card" data-persona="service"><span class="persona-number">02 <span aria-hidden="true">↗</span></span><h2>Customer Service<br>Representative</h2><p>Find order information and help customers get clear, useful answers.</p><span class="persona-tags">ORDER LOOKUP · CUSTOMER SUPPORT</span><span class="persona-enter">Open workspace →</span></button>
-        <button class="persona-card" data-persona="executive"><span class="persona-number">03 <span aria-hidden="true">↗</span></span><h2>Executive</h2><p>Get a concise view of operations and the details behind business decisions.</p><span class="persona-tags">BUSINESS CONTEXT · OPERATIONS</span><span class="persona-enter">Open workspace →</span></button>
-        <button class="persona-card" data-persona="it"><span class="persona-number">04 <span aria-hidden="true">↗</span></span><h2>IT Admin</h2><p>Troubleshoot workflows and find configuration and technical guidance.</p><span class="persona-tags">TROUBLESHOOTING · CONFIGURATION</span><span class="persona-enter">Open workspace →</span></button>
+        <button class="persona-card" data-persona="sales"><span class="persona-number">01 <span aria-hidden="true">↗</span></span><h2>Sales<br>Representative</h2><p>Find IMP prices, the latest sales-order price and item availability.</p><span class="persona-tags">PRICES · SALES HISTORY · INVENTORY</span><span class="persona-enter">Open workspace →</span></button>
+        <button class="persona-card" data-persona="service"><span class="persona-number">02 <span aria-hidden="true">↗</span></span><h2>Customer Service<br>Representative</h2><p>Review order prices, stock coverage, shipping addresses and special requirements.</p><span class="persona-tags">ORDERS · STOCK · SHIPPING</span><span class="persona-enter">Open workspace →</span></button>
+        <button class="persona-card" data-persona="production" hidden disabled><span class="persona-number">03 <span aria-hidden="true">↗</span></span><h2>Production</h2><p>Review sales demand, material readiness and production progress across Acumatica and IMPUI.</p><span class="persona-tags">MFG ORDERS · PRODUCT LOGS · OPERATIONS</span><span class="persona-enter">Open workspace →</span></button>
+        <button class="persona-card" data-persona="executive" hidden disabled><span class="persona-number">04 <span aria-hidden="true">↗</span></span><h2>Executive</h2><p>Get a concise view of operations and the details behind business decisions.</p><span class="persona-tags">BUSINESS CONTEXT · OPERATIONS</span><span class="persona-enter">Open workspace →</span></button>
+        <button class="persona-card" data-persona="it" hidden disabled><span class="persona-number">05 <span aria-hidden="true">↗</span></span><h2>IT Admin</h2><p>Review user token consumption, common questions by persona and Azure AI cost forecasts.</p><span class="persona-tags">TOKEN USAGE · AZURE COSTS · SUPPORT</span><span class="persona-enter">Open workspace →</span></button>
       </div>
-      <p class="persona-note">You can switch personas at any time. Your account permissions stay the same.</p>
+      <p class="persona-note">Persona chat is read-only. Make order, shipping and production changes in Acumatica or IMPUI. Only personas authorized for your account are shown.</p>
     </main>
     <footer>INTERNATIONAL MEDIA PRODUCTS <span>Your work. Your perspective.</span></footer>
   </section>
@@ -44,11 +47,13 @@
       <button id="new-chat" class="new-chat"><span aria-hidden="true">＋</span> New conversation</button>
       <div class="sidebar-caption">YOUR WORKSPACE</div>
       <div class="nav-current"><span aria-hidden="true">◌</span> Ask IMP Agent</div>
+      <button id="open-sales-access" class="persona-switch" hidden>Sales access<small>Assign users to Acumatica salespeople ↗</small></button>
+      <button id="open-kpi" class="persona-switch" hidden>Executive KPI dashboard<small>Scorecards, evidence and commission ↗</small></button>
       <button id="change-persona" class="persona-switch"><span id="selected-persona"></span><small>Switch persona ↗</small></button>
       <div class="sidebar-bottom"><div class="connected"><span></span> IMP + Acumatica</div><p>Answers follow your account permissions.</p><div class="account"><div class="avatar" id="user-initial">U</div><div><strong id="user-name"></strong><small id="user-role"></small></div><button id="sign-out" title="Sign out" aria-label="Sign out">↗</button></div></div>
     </aside>
     <main class="chat-main">
-      <header><div><span class="mobile-brand">IMP Agent</span><span id="header-persona" class="header-label">Your operations, in conversation</span></div><div class="header-actions"><button id="mobile-persona" aria-label="Switch persona">⇄</button><button id="mobile-new" aria-label="New conversation">＋</button><span class="secure-label">Acumatica sign-in</span><button id="mobile-sign-out" aria-label="Sign out">↗</button></div></header>
+      <header><div><span class="mobile-brand">IMP Agent</span><span id="header-persona" class="header-label">Your operations, in conversation</span></div><div class="header-actions"><button id="mobile-sales-access" hidden>Sales access</button><button id="mobile-kpi" aria-label="Open Executive KPI dashboard" hidden>KPI</button><button id="mobile-persona" aria-label="Switch persona">⇄</button><button id="mobile-new" aria-label="New conversation">＋</button><span class="secure-label">Acumatica sign-in</span><button id="mobile-sign-out" aria-label="Sign out">↗</button></div></header>
       <div id="transcript" class="transcript" aria-label="Conversation" tabindex="0">
         <section id="welcome" class="welcome">
           <div class="welcome-symbol" aria-hidden="true">✳</div><div class="eyebrow">IMP AGENT</div>
@@ -62,8 +67,42 @@
         </section>
         <div id="messages" class="messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
       </div>
-      <div class="composer-area"><form id="chat-form"><label for="question" class="sr-only">Message IMP Agent</label><textarea id="question" maxlength="3600" rows="2" placeholder="Ask about inventory, an order, or production…" required></textarea><div class="composer-actions"><span id="chat-status" role="status" aria-live="polite">Connected to IMP and Acumatica</span><button id="send" type="submit" class="send" aria-label="Send message">↑</button><button id="stop" type="button" class="stop" hidden>Stop</button></div></form><p class="composer-note">Check important details against the source records. <span>Enter to send · Shift + Enter for a new line</span></p></div>
+      <div class="composer-area"><form id="chat-form"><label for="question" class="sr-only">Message IMP Agent</label><div id="lookup-chips" class="lookup-chips" aria-label="Selected records" hidden></div><div class="lookup-input"><div id="lookup-list" class="lookup-list" role="listbox" aria-label="Matching records" hidden></div><textarea id="question" maxlength="3600" rows="2" placeholder="Ask about inventory, an order, or production…" required aria-describedby="lookup-hint lookup-status"></textarea></div><p id="lookup-hint" class="lookup-hint">Type <kbd>#</kbd> for an item or <kbd>*</kbd> for a customer. Select a suggestion to use its exact ID.</p><span id="lookup-status" class="lookup-status" role="status" aria-live="polite"></span><div class="composer-actions"><span id="chat-status" role="status" aria-live="polite">Connected to IMP and Acumatica</span><button id="send" type="submit" class="send" aria-label="Send message">↑</button><button id="stop" type="button" class="stop" hidden>Stop</button></div></form><p class="composer-note">Check important details against the source records. <span>Enter to send · Shift + Enter for a new line</span></p></div>
     </main>
   </div>
+  <section id="kpi-screen" class="kpi-screen" hidden>
+    <header class="kpi-header"><a class="brand" href="/" aria-label="IMP Agent home"><span class="brand-mark">i</span><span>IMP <strong>Agent</strong></span></a><button id="kpi-back" class="kpi-button">Back to assistant</button></header>
+    <main class="kpi-main">
+      <div class="eyebrow">EXECUTIVE WORKSPACE</div><h1>Performance with proof.</h1>
+      <p>Review results, understand the calculations, and inspect the records behind every score.</p>
+      <form id="kpi-period-form" class="kpi-period">
+        <label>From<input id="kpi-start" type="date" min="2026-01-01" max="2026-12-31" required></label>
+        <label>Through<input id="kpi-end" type="date" min="2026-01-01" max="2026-12-31" required></label>
+        <label>Company scope<select id="kpi-scope"><option value="All">All companies</option><option value="USA">USA</option><option value="Mexico">Mexico</option></select></label>
+        <button class="kpi-button primary" type="submit">Update period</button>
+      </form>
+      <nav class="kpi-tabs" aria-label="KPI views">
+        <button type="button" data-kpi-view="overview" aria-pressed="true">Overview</button>
+        <button type="button" data-kpi-view="derek" aria-pressed="false">Derek</button>
+        <button type="button" data-kpi-view="sales" aria-pressed="false">Sales</button>
+        <button type="button" data-kpi-view="service" aria-pressed="false">CS &amp; Shipping</button>
+        <button type="button" data-kpi-view="production" aria-pressed="false">Production</button>
+        <button type="button" data-kpi-view="sources" aria-pressed="false">Source records</button>
+        <button type="button" data-kpi-view="commission" aria-pressed="false">Commission</button>
+        <button type="button" data-kpi-view="setup" aria-pressed="false">Rules &amp; coverage</button>
+        <button type="button" data-kpi-view="snapshots" aria-pressed="false">Snapshots</button>
+      </nav>
+      <p id="kpi-status" role="status" aria-live="polite"></p>
+      <div id="kpi-content"></div>
+    </main>
+    <dialog id="kpi-evidence-dialog" aria-label="KPI supporting evidence"><button id="kpi-evidence-close" class="kpi-button">Close evidence</button><div id="kpi-evidence-body"></div></dialog>
+  </section>
+<section id="sales-access-screen" class="kpi-screen" hidden>
+    <header class="kpi-header"><span class="brand">IMP Agent</span><button id="sales-access-back" class="kpi-button">Back to assistant</button></header>
+    <main class="kpi-main"><div class="eyebrow">ADMINISTRATION</div><h1>Sales access</h1>
+    <p>Map an IMP login to its Acumatica Salesperson ID. Customer assignments stay in Acumatica. No employee link is needed.</p>
+    <p>Sales users can read prices, sales history, customer notes and orders only for their assigned customers. An unmapped Sales user has no customer sales access.</p>
+    <button id="sales-access-reload" class="kpi-button">Reload assignments</button><p id="sales-access-status" role="status" aria-live="polite"></p><div id="sales-access-content"></div></main>
+  </section>
 </body>
 </html>

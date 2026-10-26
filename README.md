@@ -23,7 +23,9 @@ session and conversation. The chat interface supports streamed responses,
 cancellation, and new conversations.
 
 After sign-in at `/login`, users choose a working persona at `/personas`:
-Sales Representative, Customer Service Representative, Executive, or IT Admin.
+Sales Representative, Customer Service Representative, Production, Executive, or IT Admin.
+Production is available only to Manager, Executive and SystemAdmin accounts and
+provides read-only Acumatica manufacturing and IMP product-log tools.
 The selected persona provides initial conversation context and tailored starting
 questions. It does not change the IMP account role or grant additional access.
 Switching personas starts a new conversation and keeps the same authenticated
@@ -63,6 +65,11 @@ The pipeline publishes the standalone agent frontend. The shared IMP .NET backen
 has a separate repository and deployment process. DNS and Acumatica Connected
 Application configuration are not changed on each push.
 
+Persona-query release gates are documented in [Persona query testing](docs/persona-query-testing.md).
+Run `npm run test:queries` for the browser cases or `npm test` for all UI tests.
+The backend's `scripts/test-agent-ci.sh` runs the named persona-query suite and
+all remaining backend regressions before any configured deployment.
+
 ### Manual deployment
 
 After Azure CLI login, run `.azure/deploy_web.py` using Python with `requests`
@@ -73,3 +80,5 @@ The selected subscription must contain `imp-dev-rg`; review
 
 The old `imp-bot/` and `imp-bot-deploy/` folders are the legacy Teams price-sheet
 demo, not the standalone IMP Agent frontend.
+
+Browser widget: see [installation and pilot checks](extensions/ask-imp/README.md). Run npm run package:widget to build the Chrome/Edge package. The compact /widget interface uses the same backend as the full website; only the pinned extension can frame it.

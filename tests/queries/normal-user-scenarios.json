@@ -1,0 +1,165 @@
+[
+  {
+    "id": "sales-01",
+    "persona": "sales",
+    "role": 4,
+    "query": "What is the price of #ZEB110074ECO-LL2?",
+    "tool": "GetAcumaticaCustomerItemPrice",
+    "reply": "*BROTHER",
+    "customer": "BROTHER",
+    "product": "ZEB110074ECO-LL2"
+  },
+  {
+    "id": "sales-02",
+    "persona": "sales",
+    "role": 4,
+    "query": "What is the IMP Price of #091018000EWR for *NITTO, and what would it be after a 5% discount?",
+    "tool": "GetAcumaticaCustomerItemPrice",
+    "customer": "NITTO",
+    "product": "091018000EWR",
+    "discount": -5,
+    "modelBoundary": true
+  },
+  {
+    "id": "sales-03",
+    "persona": "sales",
+    "role": 4,
+    "query": "Show me the latest 5 sales orders for *NITTO.",
+    "tool": "SearchAcumaticaSalesOrders",
+    "search": {
+      "CustomerName": "NITTO",
+      "Limit": 5
+    }
+  },
+  {
+    "id": "sales-04",
+    "persona": "sales",
+    "role": 4,
+    "query": "How much #ZEB110300PVW is available in MAIN warehouse?",
+    "tool": "GetAcumaticaInventoryAvailability",
+    "modelBoundary": true,
+    "inventory": {
+      "InventoryId": "ZEB110300PVW",
+      "Warehouse": "MAIN"
+    }
+  },
+  {
+    "id": "sales-05",
+    "persona": "sales",
+    "role": 4,
+    "query": "Show me the latest sales orders for AbeTech.",
+    "tool": "SearchAcumaticaSalesOrders",
+    "search": {
+      "CustomerName": "AbeTech"
+    },
+    "ownershipDenied": true
+  },
+  {
+    "id": "service-01",
+    "persona": "service",
+    "role": 7,
+    "query": "Show me the latest 3 sales orders for Nitto, including inventory IDs, prices and shipping status.",
+    "tool": "SearchAcumaticaSalesOrders",
+    "search": {
+      "CustomerName": "Nitto",
+      "Limit": 3,
+      "IncludeShipping": true
+    }
+  },
+  {
+    "id": "service-02",
+    "persona": "service",
+    "role": 7,
+    "query": "Find the sales order with customer PO 41321. What is its shipping address and estimated ship date?",
+    "tool": "SearchAcumaticaSalesOrders",
+    "search": {
+      "CustomerPo": "41321",
+      "IncludeShipping": true
+    }
+  },
+  {
+    "id": "service-03",
+    "persona": "service",
+    "role": 7,
+    "query": "Is SO0000181 ready to ship? Show any remaining quantities, stock shortages or holds.",
+    "tool": "GetSalesOrderFulfillmentReadiness",
+    "arguments": {
+      "orderNbr": "SO0000181"
+    }
+  },
+  {
+    "id": "service-04",
+    "persona": "service",
+    "role": 7,
+    "query": "What is the IMP Price of #091018000EWR for *NITTO? Include the latest 3 sales-order prices and relevant customer notes.",
+    "tool": "GetAcumaticaCustomerItemPrice",
+    "customer": "NITTO",
+    "product": "091018000EWR",
+    "modelBoundary": true
+  },
+  {
+    "id": "service-05",
+    "persona": "service",
+    "role": 7,
+    "query": "Show me Nitto’s orders.",
+    "tool": "SearchAcumaticaSalesOrders",
+    "reply": "Only open orders containing 091018000EWR, including estimated ship dates.",
+    "search": {
+      "CustomerName": "Nitto",
+      "Status": "Open",
+      "Product": "091018000EWR",
+      "IncludeShipping": true
+    }
+  },
+  {
+    "id": "production-01",
+    "persona": "production",
+    "role": 2,
+    "query": "Which sales orders need production orders this week?",
+    "tool": "GetWeeklyProductionDemand",
+    "arguments": {
+      "weekOffset": 0
+    }
+  },
+  {
+    "id": "production-02",
+    "persona": "production",
+    "role": 2,
+    "query": "List released production orders starting this week.",
+    "tool": "SearchAcumaticaProductionOrders",
+    "arguments": {
+      "weekOffset": 0,
+      "status": "Released",
+      "dateBasis": "start"
+    }
+  },
+  {
+    "id": "production-03",
+    "persona": "production",
+    "role": 2,
+    "query": "Do we have enough raw materials for production order PROD0000003?",
+    "tool": "GetAcumaticaRawMaterialAvailability",
+    "modelBoundary": true
+  },
+  {
+    "id": "production-04",
+    "persona": "production",
+    "role": 2,
+    "query": "What production orders are linked to sales order SO0000178, and how far along are they?",
+    "tool": "SearchAcumaticaProductionOrders",
+    "arguments": {
+      "salesOrderNbr": "SO0000178",
+      "includeProgress": true
+    }
+  },
+  {
+    "id": "production-05",
+    "persona": "production",
+    "role": 2,
+    "query": "Has PROD0000003 finished in IMPUI and synced to Acumatica?",
+    "tool": "GetProductionHandoffStatus",
+    "arguments": {
+      "productionNbr": "PROD0000003"
+    }
+  }
+]

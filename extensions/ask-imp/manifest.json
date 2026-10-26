@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Ask IMP \u2014 Acumatica Assistant",
+  "version": "1.0.0",
+  "minimum_chrome_version": "116",
+  "description": "Read-only IMP Agent beside every Classic Acumatica screen. Existing account permissions apply.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApwPCOcnBlQ6d1BMrrxmbSzqzk0x4LED912HZUO4lJ8Hg+I0wK8MkVpjVwriSXfdYLy5VSkKcBI1SYUor5Q2/a+uKkcgwiP2xTfmeLTB99ZU+MTl5aVSefabodgcTC8iHrDfuSkiuuezN26DMsYPYA2ZaFKKteN86kWWngcbqzKAISYVhFXwZAzpTGl4TgLeyvVmNQjBQP1qYvGYPftClbfmC/fMrl9NianZ5mGhslbgHEdDJlxzKipDTBH8EhGn01k4Xlm9ojLy/1UddmjrzGr12FRbpzZsKiiMbAXCBHaDaOCCwPKJIKLLjkCJWyfk7ASNw79iyNrDJ3y8tNQKAXQIDAQAB",
+  "permissions": [
+    "sidePanel"
+  ],
+  "action": {
+    "default_title": "Ask IMP",
+    "default_icon": {
+      "16": "icon16.png",
+      "32": "icon32.png",
+      "48": "icon48.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://imp-ttr.acumatica.com/*"
+      ],
+      "js": [
+        "launcher.js"
+      ],
+      "all_frames": false,
+      "run_at": "document_idle"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; script-src 'self'; object-src 'none'; frame-src https://ask.impops.work; style-src 'self'; base-uri 'none'"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "homepage_url": "https://ask.impops.work"
+}

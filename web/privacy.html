@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ask IMP — Privacy and Support</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/privacy.css"></head>
+<body><main>
+<a href="https://ask.impops.work">IMP Agent</a>
+<h1>Ask IMP privacy and support</h1>
+<p>Updated October 25, 2026</p>
+<p>Ask IMP is an International Media Products employee assistant. This notice describes the browser extension and the hosted IMP Agent application it displays. For support or privacy enquiries, contact <a href="mailto:erp@imp-ttr.com">erp@imp-ttr.com</a>.</p>
+<h2>What the extension does</h2>
+<p>The extension adds an Ask IMP button to the configured Acumatica website, imp-ttr.acumatica.com, and opens the hosted assistant in a browser side panel. The launcher does not read Acumatica form fields, passwords, cookies or tokens. It does not collect unrelated browsing history. The extension's local code does not contain advertising or data-sale functionality.</p>
+<h2>Information processed by the hosted assistant</h2>
+<ul>
+<li><strong>Account and authentication information:</strong> account identifiers, names, roles, allowed personas and OAuth access tokens. Passwords are entered on Acumatica's sign-in page. The hosted application exchanges the authorization code through IMP's backend and uses tokens to make authorized requests. The extension launcher and service worker do not receive these tokens.</li>
+<li><strong>Questions and conversations:</strong> messages you submit, selected customer and item identifiers, relevant conversation context, and the answers returned to you.</li>
+<li><strong>Authorized business information:</strong> records needed to answer your question, which may include customer contact or shipping information, prices, sales transactions and order history, inventory, production records, customer notes and role-authorized administrative reports.</li>
+<li><strong>Usage and technical information:</strong> user attribution, request time, persona, question category, model, token counts and outcome. Hosting and network services also process normal connection information such as IP addresses and browser information. The extension does not request GPS access or log mouse movements or keystrokes.</li>
+</ul>
+<h2>Purpose and service providers</h2>
+<p>Information is processed to authenticate you, apply account and customer access rules, answer your requests, maintain conversation context, protect the service and provide authorized usage and cost reporting. Questions, relevant conversation context and business information needed to answer a request may be processed by the configured Microsoft Azure AI service.</p>
+<p>The hosted application uses IMP's backend at api-dev.impops.work, IMP's configured Acumatica and IMPUI integrations, and Microsoft Azure hosting and AI services. Its chat interface also loads fonts from Google Fonts. These services receive the information necessary for their functions. The extension does not provide a function to transfer user data to advertisers or data brokers, use it for unrelated purposes, or determine creditworthiness or lending eligibility.</p>
+<h2>Storage and retention</h2>
+<p>Session credentials are kept in the hosted page's browser session storage and are cleared there on sign-out or session expiration. The server's bounded conversation memory has a 30-minute inactivity expiration and a four-hour absolute limit. Other operational records, usage events, query caches and infrastructure or AI-provider records have separate retention settings; the conversation limit is not a deletion period for all service data. Contact erp@imp-ttr.com for the retention arrangements applicable to your records.</p>
+<p>The usage ledger records request categories and metering information rather than prompt or answer text. This does not mean that no other conversation memory, cache or diagnostic record exists.</p>
+<h2 id="support">Your access and requests</h2>
+<p>Installing the extension does not grant access to IMP data. The backend enforces your account's persona permissions and customer assignments. Chat business tools are read-only; authorized administrative screens have their own controls. Signing out clears the current assistant session, but does not delete source ERP records or retained operational records.</p>
+<p>To ask about access, correction or deletion of information processed by IMP Agent, or to report a security or privacy concern, email <a href="mailto:erp@imp-ttr.com">erp@imp-ttr.com</a>. Include a description of your request and your IMP account name; do not email passwords or access tokens.</p>
+<h2>Security and changes</h2>
+<p>The application uses HTTPS and OAuth Authorization Code with PKCE. The hosted widget can be embedded only by specifically allowed extension origins. This notice will be updated when the product's relevant data handling changes.</p>
+</main></body></html>

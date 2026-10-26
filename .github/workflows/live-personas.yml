@@ -1,0 +1,33 @@
+name: Live persona acceptance
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-personas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: agent-live-tests
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Test all 15 questions against the deployed agent and real integrations
+        env:
+          LIVE_SALES_JWT: ${{ secrets.LIVE_SALES_JWT }}
+          LIVE_SALES_ACUMATICA_TOKEN: ${{ secrets.LIVE_SALES_ACUMATICA_TOKEN }}
+          LIVE_SERVICE_JWT: ${{ secrets.LIVE_SERVICE_JWT }}
+          LIVE_SERVICE_ACUMATICA_TOKEN: ${{ secrets.LIVE_SERVICE_ACUMATICA_TOKEN }}
+          LIVE_PRODUCTION_JWT: ${{ secrets.LIVE_PRODUCTION_JWT }}
+          LIVE_PRODUCTION_ACUMATICA_TOKEN: ${{ secrets.LIVE_PRODUCTION_ACUMATICA_TOKEN }}
+        run: node scripts/test-live-personas.mjs --live
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: live-persona-results
+          path: test-results/live-personas/
+          if-no-files-found: warn
+          retention-days: 7
