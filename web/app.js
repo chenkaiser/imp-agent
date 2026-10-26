@@ -11,6 +11,7 @@ import { createWidgetSignIn, validWidgetNonce } from './widget-auth.js';
 const $ = id => document.getElementById(id);
 const SESSION = 'imp-agent.session', OAUTH = 'imp-agent.oauth';
 let allowedPersonaIds = new Set();
+let kpiAccess = false;
 let session = null, config = null, controller = null, conversationId = crypto.randomUUID(), expiryTimer, personaId = null, personaStarted = false;
 const widgetMode = location.pathname === '/widget' || location.pathname === '/widget.html';
 const popupNonce = new URLSearchParams(location.search).get('widgetAuth');
@@ -22,7 +23,7 @@ const widgetSignIn = widgetMode ? createWidgetSignIn({
     catch (error) { signOut(error.message); }
   }
 }) : null;
-const kpi = createKpiWorkspace({ getSession: () => session, onUnauthorized: () => signOut('Sign in with Acumatica to review KPI evidence.'), onBack: () => showSession() });
+const kpi = createKpiWorkspace({ getSession: () => session, onUnauthorized: () => signOut('Sign in with Acumatica to review KPI evidence.'), onForbidden: () => { kpiAccess = false; showSession(); }, onBack: () => showSession() });
 const salesAccess = createSalesAccessWorkspace({ getSession: () => session, onUnauthorized: () => signOut('Sign in with Acumatica to manage sales access.'), onBack: () => showSession() });
 const autocomplete = createChatAutocomplete({ input: $('question'), list: $('lookup-list'), chips: $('lookup-chips'), status: $('lookup-status'), getSession: () => session, enabled: () => activeSession(session) && !!personaId && personaId !== 'production' && allowedPersonaIds.has(personaId), onUnauthorized: () => signOut('Sign in again to use suggestions.') });
 const lookupWarmer = createLookupWarmer({ getSession: () => session, enabled: () => allowedPersonaIds.has('sales') || allowedPersonaIds.has('service') });
@@ -33,6 +34,7 @@ function signOut(message = '') {
   lookupWarmer.stop();
   autocomplete.reset();
   allowedPersonaIds.clear();
+  kpiAccess = false;
   kpi.deactivate(); salesAccess.deactivate();
   controller?.abort(); clearTimeout(expiryTimer); session = null; personaId = null; personaStarted = false;
   sessionStorage.removeItem(SESSION); sessionStorage.removeItem(OAUTH);
@@ -41,12 +43,14 @@ function signOut(message = '') {
 }
 async function loadPersonaAccess() {
   allowedPersonaIds.clear();
+  kpiAccess = false;
   const response = await fetch(`${API_BASE}/v1/Chat/personas`, { headers: { Authorization: `Bearer ${session.token}`, 'X-Acumatica-Access-Token': session.accessToken }, cache: 'no-store' });
   if (response.status === 401) { signOut('Please sign in again to select a persona.'); return; }
   if (!response.ok) throw new Error('Unable to verify persona access. Refresh to try again.');
   const data = await response.json();
   if (!Array.isArray(data.personas)) throw new Error('Unable to verify persona access. Refresh to try again.');
   allowedPersonaIds = new Set(data.personas.filter(id => getPersona(id)));
+  kpiAccess = data.kpiAccess === true;
   if (typeof data.role === 'string') session.role = data.role;
   $('persona-status').textContent = '';
 }
@@ -68,10 +72,10 @@ function showSession() {
   $('persona-screen').hidden = !signedIn || !!getPersona(personaId);
   history.replaceState({}, '', widgetMode ? '/widget' : !signedIn ? '/login' : personaId ? '/chat' : '/personas');
   if (signedIn) {
-    $('open-kpi').hidden = personaId !== 'executive';
+    $('open-kpi').hidden = !kpiAccess;
     $('open-sales-access').hidden = personaId !== 'it';
     $('mobile-sales-access').hidden = personaId !== 'it';
-    $('mobile-kpi').hidden = personaId !== 'executive';
+    $('mobile-kpi').hidden = !kpiAccess;
     $('user-name').textContent = session.name; $('user-role').textContent = session.role;
     $('user-initial').textContent = session.name.slice(0, 1).toUpperCase();
     $('persona-user').textContent = session.name;
@@ -82,7 +86,7 @@ function showSession() {
 }
 $('open-kpi').addEventListener('click', () => {
   if (!activeSession(session)) { signOut('Sign in with Acumatica to open the Executive dashboard.'); return; }
-  if (!allowedPersonaIds.has('executive')) { showSession(); return; }
+  if (!kpiAccess) { showSession(); return; }
   $('workspace').hidden = true; $('persona-screen').hidden = true; kpi.open();
 });
 $('mobile-kpi').addEventListener('click', () => $('open-kpi').click());
@@ -130,7 +134,7 @@ async function initialize() {
   }
   showSession();
   if (requestedSalesAccess && activeSession(session)) { document.querySelector('[data-persona="it"]').click(); $('open-sales-access').click(); }
-  if (requestedKpi && activeSession(session)) { document.querySelector('[data-persona="executive"]').click(); $('open-kpi').click(); }
+  if (requestedKpi && activeSession(session) && kpiAccess) $('open-kpi').click();
   try {
     const response = await fetch(`${API_BASE}/v1/impuser/auth/acumatica/config`, { cache: 'no-store' });
     if (!response.ok) throw new Error('Sign-in service is temporarily unavailable. Refresh to try again.');

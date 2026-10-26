@@ -2,7 +2,7 @@ import { API_BASE } from './config.js';
 import { activeSession } from './lib.js';
 import { element as el, normalizeKeys, formatValue as fmt, table, csv, profileSummary, drawBars, drawWaterfall } from './kpi-view.js';
 
-export function createKpiWorkspace({ getSession, onUnauthorized, onBack }) {
+export function createKpiWorkspace({ getSession, onUnauthorized, onForbidden = () => {}, onBack }) {
   const root = document.getElementById('kpi-screen'), status = document.getElementById('kpi-status'), content = document.getElementById('kpi-content');
   const dialog = document.getElementById('kpi-evidence-dialog'), detail = document.getElementById('kpi-evidence-body');
   let active = false, catalog, dashboard, events = [], currentView = 'overview', generation = 0, loadVersion = 0;
@@ -20,9 +20,10 @@ export function createKpiWorkspace({ getSession, onUnauthorized, onBack }) {
     try {
       const response = await fetch(`${API_BASE}/v1/Kpi/${path}`, { method, headers, cache: 'no-store', signal: abort.signal, body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body) });
       if (response.status === 401) { onUnauthorized(); throw new Error('Your session expired. Sign in again.'); }
+      if (response.status === 403) { deactivate(); onForbidden(); throw new Error('The Acumatica KPI role is required to access the KPI dashboard.'); }
       let data; try { data = raw ? await response.text() : normalizeKeys(await response.json()); } catch { throw new Error('The KPI service returned an unexpected response.'); }
       if (started !== generation || !active) throw new DOMException('Workspace changed', 'AbortError');
-      if (!response.ok) throw new Error(data.error || data.message || (response.status === 403 ? 'Your account needs Executive access.' : 'The KPI service is unavailable. Please try again.'));
+      if (!response.ok) throw new Error(data.error || data.message || 'The KPI service is unavailable. Please try again.');
       return data;
     } finally { pending.delete(abort); }
   }

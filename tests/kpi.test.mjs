@@ -41,3 +41,18 @@ test('Executive dashboard uses server authorization, immutable source evidence a
   workspace.deactivate(); assert.equal(document.getElementById('kpi-content').childElementCount, 0); assert.equal(document.getElementById('kpi-screen').hidden, true);
   assert.deepEqual(normalizeKeys({ EvidenceId: 'id', Data: { ExpectedRevision: 2 } }), { evidenceId: 'id', data: { expectedRevision: 2 } }); dom.window.close();
 });
+
+test('KPI denial clears evidence and closes the dashboard without signing out', async () => {
+  const dom = new JSDOM(html, { url: 'https://ask.impops.work/chat' });
+  for (const name of ['document', 'location', 'history']) globalThis[name] = dom.window[name];
+  const session = { token: 'h.' + btoa(JSON.stringify({ exp: Math.floor(Date.now()/1000)+3600 })) + '.s', accessToken: 'erp', expiresAt: Date.now()+3600000 };
+  let forbidden = 0, signedOut = 0;
+  globalThis.fetch = async () => new Response('{"error":"KPI role required"}', { status: 403 });
+  const { createKpiWorkspace } = await import('../web/kpi.js');
+  const workspace = createKpiWorkspace({ getSession: () => session, onUnauthorized: () => signedOut++, onForbidden: () => forbidden++, onBack: () => {} });
+  document.getElementById('kpi-content').textContent = 'Previously visible evidence';
+  await workspace.open();
+  assert.equal(forbidden, 1); assert.equal(signedOut, 0);
+  assert.equal(document.getElementById('kpi-screen').hidden, true);
+  assert.equal(document.getElementById('kpi-content').textContent, ''); dom.window.close();
+});

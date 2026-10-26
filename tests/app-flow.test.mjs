@@ -14,6 +14,27 @@ const tick = () => new Promise(resolve => setTimeout(resolve, 30));
 const json = data => new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } });
 const jwt = () => 'header.' + btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })) + '.sig';
 
+for (const [role, allowed] of [['executive', false], ['systemadmin', false], ['sales', false], ['sales', true], ['executive', true]]) {
+  test(`KPI dashboard requires verified capability: ${role}, KPI=${allowed}`, async () => {
+    const dom = setup('https://ask.impops.work/kpi');
+    sessionStorage.setItem('imp-agent.session', JSON.stringify({ id: 'u', name: 'User', role: 'executive', kpiAccess: true, token: jwt(), accessToken: 'erp', expiresAt: Date.now() + 3600000 }));
+    let reads = 0;
+    globalThis.fetch = async url => {
+      if (url.endsWith('/personas')) return json({ personas: ['sales'], role, kpiAccess: allowed });
+      if (url.endsWith('/config')) return json(config);
+      if (url.includes('/v1/Kpi/')) { reads++; return json(url.endsWith('/catalog') ? { Profiles: {}, Definitions: [] } : url.includes('/dashboard?') ? { Profiles: [], Warnings: [], CheckedAtUtc: '2026-10-25T00:00:00Z' } : []); }
+      throw new Error('Unexpected endpoint');
+    };
+    await import(`../web/app.js?test=kpi-${role}-${allowed}`); await tick();
+    assert.equal(document.getElementById('open-kpi').hidden, !allowed);
+    assert.equal(document.getElementById('mobile-kpi').hidden, !allowed);
+    assert.equal(document.getElementById('kpi-screen').hidden, !allowed);
+    if (!allowed) { document.getElementById('open-kpi').hidden = false; document.getElementById('open-kpi').click(); assert.equal(reads, 0); }
+    else assert.ok(reads > 0);
+    document.getElementById('sign-out').click(); dom.window.close();
+  });
+}
+
 test('visible signed-in chat warms catalogs without waiting and sign-out cancels it', async () => {
   const dom = setup('https://ask.impops.work/personas');
   Object.defineProperty(document, 'hidden', { value: false });

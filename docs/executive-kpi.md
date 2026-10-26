@@ -4,7 +4,9 @@ The Executive workspace contains the 2026 Derek, Sales, CS/Shipping/Receiving an
 
 ## Access and reporting rules
 
-The backend accepts Executive (99) and SystemAdmin (1) accounts. Choosing an Executive persona does not grant access. KPI responses use `Cache-Control: no-store`; signing out clears the browser's KPI state and cancels outstanding requests.
+Dashboard access requires a live, verified Acumatica role named exactly **KPI** (case-insensitive). Executive, SystemAdmin, other IMP roles and persona selection do not grant it. The backend binds the ERP token to the signed-in IMP username and tenant, then reads roles through the self-only IMP-UserAccess inquiry. Failed verification denies access. The inquiry must be readable by the account; this feature does not assign roles or change Acumatica permissions. Every dashboard, evidence/export and editing request rechecks the entitlement. KPI chat lookups also require this role. Sales reports continue to require Executive access separately.
+
+The dashboard button is controlled by the server's `kpiAccess` capability, including mobile and direct `/kpi` links. A 403 clears any displayed KPI evidence without signing out the user. KPI responses use `Cache-Control: no-store`; signing out clears the browser's KPI state and cancels outstanding requests.
 
 All four profiles allocate 100 points. Sales uses column E. Production uses ERP integration 21, packaging efficiency 8 and 5S 4. Unresolved workbook definitions remain pending until an Executive records a rule, period target, rationale and evidence. Annual workbook revenue budgets are labelled as annual targets and are never automatically prorated. Other reporting years require a new approved rule/budget version.
 
