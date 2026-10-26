@@ -114,8 +114,6 @@ jobs:
           api_location: ''
           output_location: ''
           skip_app_build: true
-          skip_api_build: true
-          production_branch: main
       - name: Verify deployed routes and release files
         run: npm run verify:deployment
         env:
