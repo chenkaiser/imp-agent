@@ -8,7 +8,7 @@ test('KPI scorecards distinguish live data from editable manual actuals and link
   for (const key of ['document', 'location', 'history']) globalThis[key] = dom.window[key];
   const definitions = [{ id: 'sales.revenue', profile: 'sales', label: 'Sales revenue', unit: 'USD', target: 1000, points: 30, rule: 'Proportional', formula: 'Capped achievement', targetBasis: 'Approved period budget' }, { id: 'production.erp', profile: 'production', label: 'ERP integration', unit: '%', target: 1, points: 21, rule: 'ErpIntegration', formula: 'Milestone, adoption and timeliness gates' }];
   const metric = (definition, actual = null, liveEvidence) => ({ definition, actual, liveEvidence, earnedPoints: null, status: 'Provisional', explanation: 'Source coverage needs review' });
-  const live = { source: 'Acumatica live AR invoices', checkedAtUtc: '2026-09-30T10:00:00Z', recordCount: 1, note: 'Source proof', records: [{ reference: 'INV001', type: 'Invoice', date: '2026-09-01', customerId: 'TEST', currency: 'USD', netSales: 1500 }] };
+  const live = { source: 'Acumatica live AR invoices', checkedAtUtc: '2026-09-30T10:00:00Z', recordCount: 1, note: 'Source proof', trend: [{ date: '2026-01-01', netSales: 10 }, { date: '2026-01-02', netSales: -5 }, { date: '2026-02-01', netSales: 20 }], records: [{ reference: 'INV001', type: 'Invoice', date: '2026-09-01', customerId: 'TEST', currency: 'USD', netSales: 1500 }] };
   globalThis.fetch = async url => new Response(JSON.stringify(url.endsWith('/catalog') ? { profiles: { sales: 'Sales', production: 'Production' }, definitions } : url.includes('/dashboard?') ? { checkedAtUtc: '2026-09-30T10:00:00Z', warnings: [], profiles: [{ id: 'sales', label: 'Sales', metrics: [metric(definitions[0], 1500, live)] }, { id: 'production', label: 'Production', metrics: [metric(definitions[1])] }] } : [{ kind: 'rule', subject: 'target:test', revision: 1, data: { metricId: 'sales.revenue', rule: 'Proportional', target: 900, floor: null, basis: 'Current period budget', period: { start: document.getElementById('kpi-start').value, end: document.getElementById('kpi-end').value, scope: 'All' } } }]), { headers: { 'Content-Type': 'application/json' } });
   const token = 'h.' + btoa(JSON.stringify({ exp: Math.floor(Date.now()/1000)+3600 })) + '.s';
   const { createKpiWorkspace } = await import('../web/kpi.js');
@@ -16,6 +16,7 @@ test('KPI scorecards distinguish live data from editable manual actuals and link
   await workspace.open();
   document.querySelector('[data-kpi-view="sales"]').click();
   assert.match(document.getElementById('kpi-content').textContent, /Acumatica live/);
+  assert.match(document.querySelector('#kpi-content svg').getAttribute('aria-label'), /2026-01: \$5.00; 2026-02: \$20.00/);
   assert.equal([...document.querySelectorAll('#kpi-content button')].some(b => b.textContent === 'Enter / revise actual'), false);
   document.getElementById('kpi-evidence-dialog').showModal = () => {};
   [...document.querySelectorAll('#kpi-content button')].find(b => b.textContent === 'View Acumatica records').click();

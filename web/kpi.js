@@ -69,7 +69,12 @@ export function createKpiWorkspace({ getSession, onUnauthorized, onForbidden = (
       })));
       const chart = el('div'); content.append(chart); drawBars(chart, profile.metrics.filter(m => m.earnedPoints !== null).map(m => ({ label: m.definition.label, value: m.earnedPoints })), 'Earned points from reviewed metrics', 'Points');
       const invoiceTrend = profile.metrics.find(m => m.definition.id === 'sales.revenue')?.liveEvidence?.trend;
-      if (invoiceTrend?.length) { const actualChart = el('div'); content.append(actualChart); drawBars(actualChart, invoiceTrend.map(day => ({ label: day.date, value: day.netSales })), 'Net invoiced sales by date — Acumatica', 'USD'); }
+      if (invoiceTrend?.length) {
+        const monthly = period().start.slice(0, 7) !== period().end.slice(0, 7), buckets = new Map();
+        for (const day of invoiceTrend) { const key = monthly ? day.date.slice(0, 7) : day.date; buckets.set(key, (buckets.get(key) || 0) + day.netSales); }
+        const actualChart = el('div'); content.append(actualChart);
+        drawBars(actualChart, [...buckets].map(([label, value]) => ({ label, value })), `Net invoiced sales by ${monthly ? 'month' : 'date'} — Acumatica`, 'USD');
+      }
       if (profile.id === 'derek') content.append(el('p', 'Derek’s annual bonus remains pending: the workbook conflicts at 90% achievement and leaves the exact 100% boundary unclear. KPI points and revenue-based bonuses are separate.', 'kpi-notice'));
       const trendEvents = events.filter(e => e.kind === 'observation' && e.data.observation?.metricId.startsWith(profile.id + '.') && e.data.observation.period.scope === period().scope);
       const histories = new Map();
