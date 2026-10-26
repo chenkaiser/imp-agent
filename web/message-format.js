@@ -36,14 +36,15 @@ function inline(parent, text) {
 
 function cells(line) {
   const values = []; let value = '', escaped = false;
+  const clean = raw => /^\s*?\u00a0\u00a0/.test(raw) ? '\u00a0\u00a0' + raw.trim() : raw.trim();
   const input = line.trim().replace(/^\|/, '').replace(/\|$/, '');
   for (const ch of input) {
     if (escaped) { value += ch; escaped = false; }
     else if (ch === '\\') escaped = true;
-    else if (ch === '|') { values.push(value.trim()); value = ''; }
+    else if (ch === '|') { values.push(clean(value)); value = ''; }
     else value += ch;
   }
-  values.push((value + (escaped ? '\\' : '')).trim());
+  values.push(clean(value + (escaped ? '\\' : '')));
   return values;
 }
 const tableLine = line => line.trim().startsWith('|') && line.trim().endsWith('|');
@@ -52,19 +53,32 @@ const separator = line => tableLine(line) && cells(line).every(cell => /^:?-{3,}
 export function renderAssistantMessage(target, text) {
   const doc = target.ownerDocument, fragment = doc.createDocumentFragment();
   const lines = text.replace(/\r\n/g, '\n').split('\n');
+  const reportMode = lines[0] === '# Sales By Salesperson';
+  target.classList.toggle('sales-report-answer', reportMode);
   for (let i = 0; i < lines.length;) {
     if (!lines[i].trim()) { i++; continue; }
+    if (reportMode && /^Year: \d{4}$/.test(lines[i]) && /^Period: \d{1,2}$/.test(lines[i + 1] || '') && lines[i + 2] === 'Territory: (All)') {
+      const filters = doc.createElement('dl'); filters.className = 'sales-report-filters';
+      for (const line of lines.slice(i, i + 3)) { const split = line.indexOf(': '); const label = doc.createElement('dt'), value = doc.createElement('dd'); label.textContent = line.slice(0, split); value.textContent = line.slice(split + 2); filters.append(label, value); }
+      fragment.append(filters); i += 3; continue;
+    }
     if (tableLine(lines[i]) && separator(lines[i + 1] || '')) {
       const headers = cells(lines[i]); i += 2;
+      const templateTable = reportMode && headers.length === 2 && headers[0] === 'Salesperson' && headers[1] === 'Total Sales Amount';
       const wrapper = doc.createElement('div'); wrapper.className = 'answer-table-scroll';
       wrapper.tabIndex = 0; wrapper.setAttribute('role', 'region'); wrapper.setAttribute('aria-label', 'Results table');
       const table = doc.createElement('table'), head = doc.createElement('thead'), headRow = doc.createElement('tr');
+      if (templateTable) { table.className = 'sales-report-table'; wrapper.classList.add('sales-report-scroll'); }
       for (const label of headers) { const th = doc.createElement('th'); th.scope = 'col'; th.textContent = label; headRow.append(th); }
       head.append(headRow); table.append(head);
       const body = doc.createElement('tbody');
       while (i < lines.length && tableLine(lines[i]) && cells(lines[i]).length === headers.length) {
         const row = doc.createElement('tr');
-        for (const value of cells(lines[i++])) { const cell = doc.createElement('td'); inline(cell, value); row.append(cell); }
+        for (const [column, value] of cells(lines[i++]).entries()) { const cell = doc.createElement('td');
+          const customer = templateTable && column === 0 && value.startsWith('\u00a0\u00a0');
+          if (customer) cell.classList.add('report-customer-cell');
+          inline(cell, customer ? value.slice(2) : value); row.append(cell);
+        }
         body.append(row);
       }
       table.append(body); wrapper.append(table); fragment.append(wrapper); continue;

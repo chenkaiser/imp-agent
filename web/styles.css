@@ -13,3 +13,17 @@
 .lookup-input{position:relative}.lookup-list{position:absolute;bottom:calc(100% + 8px);left:0;right:0;max-height:min(350px,45vh);overflow:auto;background:#fff;border:1px solid #ccd9d4;border-radius:12px;box-shadow:0 12px 32px #163f3226;z-index:20}.lookup-list[hidden]{display:none}.lookup-option{padding:11px 14px;border-bottom:1px solid #edf1ee;cursor:pointer;display:flex;flex-direction:column;gap:3px}.lookup-option[aria-selected=true],.lookup-option:hover{background:#eaf5ef}.lookup-option strong{font-size:14px;color:#164c37}.lookup-option small{font-size:12px;color:#53665b;overflow-wrap:anywhere}.lookup-hint,.lookup-status{font-size:12px;color:#5d7165;margin:6px 2px;display:block}.lookup-hint kbd{font:600 12px inherit;padding:1px 5px;border:1px solid #d5ded7;border-radius:4px;background:#f5f8f5}.lookup-status:empty{display:none}.lookup-chips{display:flex;flex-wrap:wrap;gap:6px;padding:6px 0}.lookup-chips[hidden]{display:none}.lookup-chip{display:inline-flex;align-items:center;gap:7px;border-radius:8px;padding:5px 8px;font-size:12px;background:#e9f2ee;border:1px solid #d1e3d8;max-width:100%}.lookup-chip.customer{background:#eef1fb;border-color:#d9def1}.lookup-chip span{overflow-wrap:anywhere}.lookup-chip button{border:0;background:transparent;cursor:pointer;font-size:19px;color:#40584a;padding:0 3px;flex:none}.lookup-chip button:focus-visible{outline:2px solid #16744b}@media(max-width:600px){.lookup-hint{font-size:11px}.lookup-option{padding:10px}.lookup-chip{font-size:11px}}
 
 .formatted-answer a{color:#136547;text-decoration:underline;text-underline-offset:3px;font-weight:600}.formatted-answer a:focus-visible{outline:2px solid #16744b;outline-offset:3px}
+
+/* Sales By Salesperson follows the uploaded worksheet: filters, two columns and indented customers. */
+.sales-report-answer h3{font-family:Calibri,Arial,sans-serif;font-size:24px;font-weight:700;color:#222;margin:8px 0 8px}
+.sales-report-answer .sales-report-filters{display:grid;grid-template-columns:minmax(100px,1fr) 145px;max-width:650px;gap:3px 12px;font:14.67px Calibri,Arial,sans-serif;color:#222;margin:0 0 20px}
+.sales-report-filters dt,.sales-report-filters dd{margin:0;padding:0 6px}
+.sales-report-scroll{border:0;border-radius:0;max-width:650px;margin:0 0 18px}
+.sales-report-scroll .sales-report-table{font:14.67px/1.35 Calibri,Arial,sans-serif;min-width:480px;color:#222}
+.sales-report-table th,.sales-report-table td{padding:3px 6px;border:1px solid #e6e6e6;background:#fff;color:#222;font-size:inherit;letter-spacing:normal;font-weight:400;vertical-align:middle}
+.sales-report-table th:first-child,.sales-report-table td:first-child{width:76%;font-weight:400;color:#222;white-space:normal;overflow-wrap:anywhere}
+.sales-report-table th:last-child,.sales-report-table td:last-child{width:24%;text-align:right;white-space:nowrap;min-width:145px}
+.sales-report-table tbody tr:nth-child(even){background:#fff}
+.sales-report-table td.report-customer-cell{padding-left:24px}
+
+.sales-report-scroll{max-height:560px;overflow:auto}.sales-report-table thead th{position:sticky;top:0;z-index:1;background:#fff}

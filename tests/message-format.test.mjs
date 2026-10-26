@@ -92,3 +92,17 @@ test('invoice link allowlist rejects mismatched records, extra keys and unsuppor
     assert.equal(element.querySelectorAll('a').length, 0); dom.window.close();
   }
 });
+
+
+test('sales report matches template filters, two columns, customer indentation and grand total', () => {
+  const text = '# Sales By Salesperson\n\nYear: 2026\nPeriod: 10\nTerritory: (All)\n\n| Salesperson | Total Sales Amount |\n| --- | --- |\n| **Representative Alpha** | **$100.00** |\n| \u00a0\u00a0Example Customer | $100.00 |\n| **Grand Total** | **$100.00** |';
+  const { dom, element } = body(text);
+  assert.ok(element.classList.contains('sales-report-answer'));
+  assert.deepEqual([...element.querySelectorAll('dt')].map(n => n.textContent), ['Year', 'Period', 'Territory']);
+  assert.deepEqual([...element.querySelectorAll('dd')].map(n => n.textContent), ['2026', '10', '(All)']);
+  assert.equal(element.querySelectorAll('.sales-report-table th').length, 2);
+  assert.equal(element.querySelector('.report-customer-cell').textContent, 'Example Customer');
+  assert.equal(element.querySelectorAll('tbody tr').length, 3);
+  assert.match(element.querySelector('tbody tr:last-child').textContent, /Grand Total/);
+  dom.window.close();
+});
