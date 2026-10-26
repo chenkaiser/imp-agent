@@ -76,3 +76,19 @@ test('untrusted origins, record mismatches, credentials, duplicate keys and acti
   const { dom, element } = body(links.map(url => `[SO0000181](${url})`).join('\n'));
   assert.equal(element.querySelector('a,script,img'), null); dom.window.close();
 });
+
+test('verified AR invoices and credits render as safe Acumatica links', () => {
+  for (const type of ['INV', 'CRM', 'DRM']) {
+    const { dom, element } = body(`[INV000198](https://imp-ttr.acumatica.com/Main?CompanyID=International%20Media%20Products&ScreenId=AR301000&DocType=${type}&RefNbr=INV000198)`);
+    assert.equal(element.querySelectorAll('a').length, 1);
+    assert.equal(element.querySelector('a').target, '_blank');
+    dom.window.close();
+  }
+});
+test('invoice link allowlist rejects mismatched records, extra keys and unsupported types', () => {
+  const base = 'https://imp-ttr.acumatica.com/Main?CompanyID=International%20Media%20Products&ScreenId=AR301000';
+  for (const suffix of ['&DocType=INV&RefNbr=OTHER', '&DocType=PAY&RefNbr=INV000198', '&DocType=INV&RefNbr=INV000198&x=1', '&DocType=INV&DocType=CRM&RefNbr=INV000198']) {
+    const { dom, element } = body(`[INV000198](${base}${suffix})`);
+    assert.equal(element.querySelectorAll('a').length, 0); dom.window.close();
+  }
+});

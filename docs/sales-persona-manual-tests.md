@@ -176,3 +176,7 @@ Use autocomplete to select the exact customer/item. Verify currency and UOM befo
 | D6. Complete current customer price list | Not implemented | |
 
 Implementation evidence: backend `impapi/Mcp/ImpMcpTools.Inventory.cs`, `ImpMcpTools.SalesOrders.cs`, `ImpMcpTools.SalesPrices.cs`, `ImpMcpTools.CustomerPricing.cs`, `impapi/business/Chat/ChatCustomerPriceAnswer.cs`, and `ChatApiGateway.cs`. Shipping projections currently include shipment number/status/date/quantity, not package tracking fields. The gateway applies an Executive floor to Budget/ImpReport APIs; that does not provide Sales with scoped report access.
+
+### Invoice sales demo
+
+The first monthly invoice report is available for demo: salesperson totals, customer totals and invoice evidence, with Sales ownership enforced. Use the [invoice demo script](invoice-sales-report-demo.md). This covers monthly invoice reporting; product-level reporting, prior-year comparisons and budgets remain future scope.

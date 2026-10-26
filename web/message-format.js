@@ -4,12 +4,13 @@ export function safeSalesOrderLink(label, raw) {
     const url = new URL(raw);
     if (url.origin !== 'https://imp-ttr.acumatica.com' || url.username || url.password || url.pathname !== '/Main' || url.hash) return null;
     const screen = url.searchParams.get('ScreenId');
-    const recordKey = screen === 'SO301000' ? 'OrderNbr' : screen === 'AM201500' ? 'ProdOrdID' : null;
+    const recordKey = screen === 'SO301000' ? 'OrderNbr' : screen === 'AM201500' ? 'ProdOrdID' : screen === 'AR301000' ? 'RefNbr' : null;
     if (!recordKey) return null;
+    const typeKey = screen === 'AR301000' ? 'DocType' : 'OrderType';
     const keys = [...url.searchParams.keys()];
-    if (keys.length !== 4 || new Set(keys).size !== 4 || keys.some(k => !['CompanyID', 'ScreenId', 'OrderType', recordKey].includes(k))) return null;
+    if (keys.length !== 4 || new Set(keys).size !== 4 || keys.some(k => !['CompanyID', 'ScreenId', typeKey, recordKey].includes(k))) return null;
     if (url.searchParams.get('CompanyID') !== 'International Media Products' ||
-      !/^[A-Za-z0-9]{1,4}$/.test(url.searchParams.get('OrderType') || '') || !/^[A-Za-z0-9_-]{1,30}$/.test(label) || url.searchParams.get(recordKey) !== label) return null;
+      !(screen === 'AR301000' ? /^(INV|CRM|DRM)$/.test(url.searchParams.get(typeKey) || '') : /^[A-Za-z0-9]{1,4}$/.test(url.searchParams.get(typeKey) || '')) || !/^[A-Za-z0-9_-]{1,30}$/.test(label) || url.searchParams.get(recordKey) !== label) return null;
     return url.href;
   } catch { return null; }
 }
