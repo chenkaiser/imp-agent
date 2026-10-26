@@ -12,11 +12,11 @@ The three checklists contain **15 scenarios: five Sales, five Customer Service a
 
 - Browser CI submits all 15 scenarios, including their actual follow-up text, through the chat form. Marker questions choose autocomplete suggestions first. It verifies persona, auth headers, readable rendering and conversation continuity. A separate assertion requires exactly five documented scenarios per persona.
 - Backend `NormalUserAcceptanceTests` checks the exact questions' routing, extracted filters, read-only tool permissions, discount percentage and follow-up state. The unassigned-customer case also executes adversarial customer-scope regressions. Existing reader, arithmetic, formatter and full-pipeline regressions remain in the broader gate.
-- `scripts/test-agent-ci.sh` explicitly runs `Category=NormalUserAcceptance` before other regressions and requires a report containing all 15 cases plus the coverage assertion. A failed, removed or empty suite stops the deployment gate. Bitbucket and CodeBuild already invoke this script.
+- `scripts/test-agent-ci.sh` explicitly runs `Category=NormalUserAcceptance` before other regressions and requires a report containing all 15 cases plus the coverage assertion. A failed, removed or empty suite stops the deployment gate. The backend GitHub Actions workflow invokes this script.
 
 **Boundary:** four questions currently require model extraction: Sales discount, Sales stock, Customer Service pricing with notes, and Production materials. The deterministic backend suite supplies model-response fixtures for these cases; browser responses are also fixtures. This verifies the application's handling of those responses, not a real model's semantic accuracy. It does not verify tenant endpoint availability, credentials, live data completeness or deployed versions. A passing CI result is not proof that all 15 live queries work. Live model/integration evaluation remains a separate test layer.
 
-The browser and backend have separate repositories and CI systems. Each tests its own source; the browser job does not clone or authenticate to the private backend repository.
+The browser and backend have separate repositories, both using GitHub Actions. Each tests its own source; the browser job does not clone or authenticate to the private backend repository.
 
 | Layer | Location | Checks |
 | --- | --- | --- |
@@ -49,9 +49,9 @@ The backend script restores the test project, runs the named query gate, rejects
 
 ## CI/CD behavior
 
-- GitHub Actions: PRs and `main` pushes run existing UI tests and a separate `persona-queries` job. The frontend deployment requires both jobs. JUnit artifacts are uploaded even when tests fail.
-- Bitbucket Pipelines: default branch builds and PRs run the backend gate. `master` Azure deployments and every existing manual Azure/AWS deployment run the gate first. A failed or empty query suite blocks deployment. Reports are captured on success and failure.
-- AWS CodeBuild: `buildspec.yml` invokes the same backend gate and refuses publishing after a failed build. This does not provision a CodeBuild report group or change IAM permissions.
+- Frontend GitHub Actions (`chenkaiser/imp-agent`): PRs and `main` pushes run UI tests and a separate `persona-queries` job. Frontend deployment requires both jobs.
+- Backend GitHub Actions (`chenkaiser/imp-server`): `.github/workflows/agent-ci-cd.yml` runs the 15-question acceptance gate, remaining persona regressions and all backend regressions. Reports are uploaded even after a failure. Azure deployment requires passing tests, the default branch, configured OIDC authentication and the explicit `AZURE_DEPLOY_ENABLED` repository variable. Deployment is disabled during migration.
+- Legacy Bitbucket and CodeBuild definitions remain in the imported source for compatibility; they are not the GitHub release pipeline. Avoid enabling concurrent deployments from both systems.
 
 Hosted CI uses the checked-in versions. Both repositories' pending application/test/workflow changes must be committed and pushed before the hosted gates run. Running the scripts locally does not publish workflow changes or configure protected-branch merge checks.
 
