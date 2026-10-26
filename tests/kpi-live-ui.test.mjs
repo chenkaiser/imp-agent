@@ -9,7 +9,7 @@ test('KPI scorecards distinguish live data from editable manual actuals and link
   const definitions = [{ id: 'sales.revenue', profile: 'sales', label: 'Sales revenue', unit: 'USD', target: 1000, points: 30, rule: 'Proportional', formula: 'Capped achievement', targetBasis: 'Approved period budget' }, { id: 'production.erp', profile: 'production', label: 'ERP integration', unit: '%', target: 1, points: 21, rule: 'ErpIntegration', formula: 'Milestone, adoption and timeliness gates' }];
   const metric = (definition, actual = null, liveEvidence) => ({ definition, actual, liveEvidence, earnedPoints: null, status: 'Provisional', explanation: 'Source coverage needs review' });
   const live = { source: 'Acumatica live AR invoices', checkedAtUtc: '2026-09-30T10:00:00Z', recordCount: 1, note: 'Source proof', records: [{ reference: 'INV001', type: 'Invoice', date: '2026-09-01', customerId: 'TEST', currency: 'USD', netSales: 1500 }] };
-  globalThis.fetch = async url => new Response(JSON.stringify(url.endsWith('/catalog') ? { profiles: { sales: 'Sales', production: 'Production' }, definitions } : url.includes('/dashboard?') ? { checkedAtUtc: '2026-09-30T10:00:00Z', warnings: [], profiles: [{ id: 'sales', label: 'Sales', metrics: [metric(definitions[0], 1500, live)] }, { id: 'production', label: 'Production', metrics: [metric(definitions[1])] }] } : []), { headers: { 'Content-Type': 'application/json' } });
+  globalThis.fetch = async url => new Response(JSON.stringify(url.endsWith('/catalog') ? { profiles: { sales: 'Sales', production: 'Production' }, definitions } : url.includes('/dashboard?') ? { checkedAtUtc: '2026-09-30T10:00:00Z', warnings: [], profiles: [{ id: 'sales', label: 'Sales', metrics: [metric(definitions[0], 1500, live)] }, { id: 'production', label: 'Production', metrics: [metric(definitions[1])] }] } : [{ kind: 'rule', subject: 'target:test', revision: 1, data: { metricId: 'sales.revenue', rule: 'Proportional', target: 900, floor: null, basis: 'Current period budget', period: { start: document.getElementById('kpi-start').value, end: document.getElementById('kpi-end').value, scope: 'All' } } }]), { headers: { 'Content-Type': 'application/json' } });
   const token = 'h.' + btoa(JSON.stringify({ exp: Math.floor(Date.now()/1000)+3600 })) + '.s';
   const { createKpiWorkspace } = await import('../web/kpi.js');
   const workspace = createKpiWorkspace({ getSession: () => ({ token, accessToken: 'erp', expiresAt: Date.now()+3600000 }), onUnauthorized: () => {}, onBack: () => {} });
@@ -26,6 +26,7 @@ test('KPI scorecards distinguish live data from editable manual actuals and link
   for (const name of ['milestoneCompletion', 'adoptionRate', 'onTimeTransactionRate']) assert.equal(document.querySelector(`[name="${name}"]`).required, true);
   document.querySelector('[data-kpi-view="setup"]').click();
   assert.equal(document.querySelector('[name="rule"]').disabled, true);
-  assert.equal(document.querySelector('[name="target"]').value, '1000');
+  assert.equal(document.querySelector('[name="target"]').value, '900');
+  assert.equal(document.querySelector('[name="basis"]').value, 'Current period budget');
   workspace.deactivate(); dom.window.close();
 });
