@@ -20,7 +20,7 @@ test('visible signed-in chat warms catalogs without waiting and sign-out cancels
   sessionStorage.setItem('imp-agent.session', JSON.stringify({ id: 'u', name: 'User', role: 'sales', token: jwt(), accessToken: 'erp', expiresAt: Date.now() + 3600000 }));
   let warmOptions, finishWarm;
   globalThis.fetch = async (url, options) => {
-    if (url.endsWith('/personas')) return json({ personas: ['sales'], role: 'sales' });
+    if (url.endsWith('/personas')) { assert.equal(options.headers['X-Acumatica-Access-Token'], 'erp'); return json({ personas: ['sales'], role: 'sales' }); }
     if (url.endsWith('/config')) return json(config);
     if (url.endsWith('/lookups/warm')) { warmOptions = options; return new Promise(resolve => { finishWarm = resolve; }); }
     throw new Error('Unexpected request');

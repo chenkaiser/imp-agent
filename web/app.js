@@ -41,7 +41,7 @@ function signOut(message = '') {
 }
 async function loadPersonaAccess() {
   allowedPersonaIds.clear();
-  const response = await fetch(`${API_BASE}/v1/Chat/personas`, { headers: { Authorization: `Bearer ${session.token}` }, cache: 'no-store' });
+  const response = await fetch(`${API_BASE}/v1/Chat/personas`, { headers: { Authorization: `Bearer ${session.token}`, 'X-Acumatica-Access-Token': session.accessToken }, cache: 'no-store' });
   if (response.status === 401) { signOut('Please sign in again to select a persona.'); return; }
   if (!response.ok) throw new Error('Unable to verify persona access. Refresh to try again.');
   const data = await response.json();

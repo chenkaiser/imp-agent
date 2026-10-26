@@ -1,6 +1,6 @@
 # Invoice sales report demo
 
-Use the **Executive persona with an active Executive account role**. Sales, Customer Service, Manager, Sales Manager and SystemAdmin roles cannot access sales reports. Selecting another persona does not grant Executive permissions.
+Use the **Executive persona** with an active IMP Executive role or a verified Acumatica role named exactly **Executive**. Sales, Customer Service, Manager, Sales Manager and SystemAdmin roles alone do not grant sales-report access. Selecting another persona does not grant Executive permissions. Existing IMP roles are preserved: for example, SystemAdmin plus verified Acumatica Executive can use both IT Admin and Executive. Acumatica entitlement is checked with the signed-in user token against the self-only role inquiry during persona discovery and on every Executive chat request; failed verification denies the additional access.
 
 ## Demo script
 
