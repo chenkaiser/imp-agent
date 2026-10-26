@@ -14,11 +14,25 @@ Actual evidence is submitted as a draft. It needs a review decision and complete
 
 ## Sources and evidence
 
-Source collection saves an immutable extract. Available sources are IMPUI production/packing, annual budget inputs, imported monthly sales history, and Acumatica sales invoices, shipments, purchase receipts, service cases and physical-inventory reviews. Acumatica reads use the signed-in user's access token and a fixed endpoint/field allowlist. Pagination, unique keys, date boundaries and population limits are checked. No ERP write actions or shared service-account fallback are used.
+### Acumatica actuals and manual fallback
 
-Source extracts support review; they do not automatically assert every KPI numerator and denominator. Shipping populations can require overdue unshipped orders, and production attainment requires a reconciled plan with comparable units. SalesInvoice is not the complete GL/AR revenue population. Surveys, complaints, incident registers, 5S and FIFO inspection results need explicit reviewed evidence. The Executive enters or reconciles the metric's actual from its supporting records.
+Approved budgets and period targets are maintained in IMP Agent configuration. Fixed formulas and weights cannot be changed through the target editor. Revenue for a partial year requires an explicitly approved target for those exact dates; an annual budget is never automatically divided into months.
 
-Production reads use separate flat queries for jobs, rolls and packing to prevent join multiplication. Duplicate main/offcut roll rows fail collection. Company-specific collection requires machine/company mappings. Source notes distinguish a complete database query from complete financial history. The current Azure database returned no 2026 budget-input or imported sales-history rows during validation.
+The dashboard reads released Acumatica AR invoices and debit memos less credit memos for **Sales revenue / All companies**, using the existing verified invoice-report reader. All pages contribute to the total, document discounts are deducted, tax is excluded and AR-line freight is included. Different currencies are never combined. An absent population is not assumed to be zero. USA/Mexico mapping and other metric sources remain manual until verified.
+
+Live actuals take precedence over ordinary manual observations and are labelled **Acumatica live**, with a checked time, document count and linked invoice preview. The daily revenue chart uses the complete invoice population, independently of the preview limit. If the source cannot be verified, the metric remains open for reviewed manual input. When ERP data is incomplete, an explicit manual override can be entered with an explanation and supporting references; it takes precedence only after approval and is labelled **Reviewed manual override**. Financial coverage must still be reconciled before points are awarded; an endpoint population is not proof that migrated history is complete. Dashboard reads do not write source records. Snapshots retain the live values and proof used at creation; closed periods display their frozen snapshot until reopened.
+
+Legacy IMPUI budget/history/production source collection is disabled for this workflow. Existing archived evidence is retained. Actuals without a mapped Acumatica source can be entered manually with supporting references, saved as draft, and reviewed.
+
+Approved financial formulas: revenue earns proportional points capped at its allocation; margin and collections earn full points at/above target; expenses, bad debt and safety earn full points at/below target. Otherwise threshold-based metrics earn zero. Production ERP integration requires completion by Aug 3 of at least 80%, adoption of at least 95% and on-time transactions of at least 90%; if all three pass, points are current completion times 21, capped at 21, otherwise zero.
+
+Unresolved definitions remain visible rather than being guessed: production paperwork audit failures, scrap basis and excess-band rounding, production-return denominator and band rounding, and Derek's separate bonus boundaries.
+
+Source collection saves an immutable extract. Current collection options are Acumatica AR invoices, shipments, purchase receipts, service cases and physical-inventory reviews. Except for the verified AR invoice reader, these extracts still require tenant field/population verification before automatic metric calculation. Acumatica reads use the signed-in user's access token and a fixed endpoint/field allowlist. Pagination, unique keys, date boundaries and population limits are checked. No ERP write actions or shared service-account fallback are used.
+
+Source extracts support review; they do not automatically assert every KPI numerator and denominator. Shipping populations can require overdue unshipped orders, and production attainment requires a reconciled plan with comparable units. Surveys, complaints, incident registers, 5S and FIFO inspection results need a verified Acumatica mapping or explicit reviewed manual evidence. The Executive enters or reconciles unmapped actuals from their supporting records.
+
+Legacy production extracts used separate flat queries for jobs, rolls and packing to prevent join multiplication. Those archived records remain available as historical proof; new KPI source collection does not read IMPUI jobs, imported sales history or budget inputs.
 
 Evidence revisions are append-only. Revisions return actuals to draft and stale reviews fail with HTTP 409. Downloads preserve the stored JSON's numeric precision. Workbooks are archived privately in the KPI evidence table, with a SHA-256 reference; they are never public frontend assets.
 
@@ -34,7 +48,7 @@ Snapshots freeze scorecard definitions, results, evidence references and the com
 
 ## API and database
 
-The frontend route is `/kpi`, accessible from the Executive persona's workspace. API routes are under `/v1/Kpi`: `catalog`, `dashboard`, `events`, `evidence/{id}`, `evidence/{id}/export`, `observations`, `evidence/{id}/review`, `coverage`, `rules`, `sources/{dataset}`, `commissions`, `commissions/import`, `snapshots` and `period`. Chat uses the read-only `GetExecutiveKpis` tool and the same scoring service.
+The frontend route is `/kpi`, accessible to users with the verified Acumatica KPI entitlement. API routes are under `/v1/Kpi`: `catalog`, `dashboard`, `events`, `evidence/{id}`, `evidence/{id}/export`, `observations`, `evidence/{id}/review`, `coverage`, `rules`, `sources/{dataset}`, `commissions`, `commissions/import`, `snapshots` and `period`. Chat uses the read-only `GetExecutiveKpis` tool and the same scoring service.
 
 Apply `impapi/db/migrations/2026-10-22_kpi_event.sql` explicitly to the intended PostgreSQL database before the API release. It adds only `kpievent` and its indexes. Do not scaffold EF migrations or alter production/finance tables. Local fresh SQLite databases use the EF model. Existing SQLite databases also need the new table created explicitly.
 

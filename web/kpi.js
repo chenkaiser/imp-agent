@@ -1,5 +1,6 @@
 import { API_BASE } from './config.js';
 import { activeSession } from './lib.js';
+import { safeSalesOrderLink } from './message-format.js';
 import { element as el, normalizeKeys, formatValue as fmt, table, csv, profileSummary, drawBars, drawWaterfall } from './kpi-view.js';
 
 export function createKpiWorkspace({ getSession, onUnauthorized, onForbidden = () => {}, onBack }) {
@@ -58,14 +59,17 @@ export function createKpiWorkspace({ getSession, onUnauthorized, onForbidden = (
     const profile = dashboard.profiles.find(p => p.id === currentView);
     if (profile) {
       heading(`${profile.label} scorecard`, 'Actuals and scores apply to the selected dates and company scope.');
-      content.append(table(['Metric', 'Actual', 'Target', 'Points', 'Status', 'Evidence'], profile.metrics.map(m => {
+      content.append(table(['Metric', 'Actual', 'Source', 'Target', 'Points', 'Status', 'Evidence'], profile.metrics.map(m => {
         const actions = el('div', null, 'kpi-actions'); if (m.evidenceId) actions.append(button('View', () => evidence(m.evidenceId)));
-        actions.append(button('Add / revise', () => observationForm(m.definition.id)));
+        if (m.liveEvidence) actions.append(button('View Acumatica records', () => liveEvidence(m)), button('Manual input for incomplete ERP data', () => observationForm(m.definition.id)));
+        else actions.append(button('Enter / revise actual', () => observationForm(m.definition.id)));
         const name = el('div'); name.append(el('strong', m.definition.label), el('small', m.explanation, 'kpi-muted'));
         const target = el('div', fmt(m.definition.target, m.definition.unit)); target.append(el('small', m.definition.targetBasis || 'Selected period', 'kpi-muted'));
-        return [name, fmt(m.actual, m.definition.unit), target, m.earnedPoints === null ? `Pending / ${m.definition.points}` : `${fmt(m.earnedPoints)} / ${m.definition.points}`, m.status, actions];
+        return [name, fmt(m.actual, m.definition.unit), m.liveEvidence ? 'Acumatica live' : m.actual === null ? 'Manual input available' : m.evidenceOrigin || 'Manual input', target, m.earnedPoints === null ? `Pending / ${m.definition.points}` : `${fmt(m.earnedPoints)} / ${m.definition.points}`, m.status, actions];
       })));
       const chart = el('div'); content.append(chart); drawBars(chart, profile.metrics.filter(m => m.earnedPoints !== null).map(m => ({ label: m.definition.label, value: m.earnedPoints })), 'Earned points from reviewed metrics', 'Points');
+      const invoiceTrend = profile.metrics.find(m => m.definition.id === 'sales.revenue')?.liveEvidence?.trend;
+      if (invoiceTrend?.length) { const actualChart = el('div'); content.append(actualChart); drawBars(actualChart, invoiceTrend.map(day => ({ label: day.date, value: day.netSales })), 'Net invoiced sales by date — Acumatica', 'USD'); }
       if (profile.id === 'derek') content.append(el('p', 'Derek’s annual bonus remains pending: the workbook conflicts at 90% achievement and leaves the exact 100% boundary unclear. KPI points and revenue-based bonuses are separate.', 'kpi-notice'));
       const trendEvents = events.filter(e => e.kind === 'observation' && e.data.observation?.metricId.startsWith(profile.id + '.') && e.data.observation.period.scope === period().scope);
       const histories = new Map();
@@ -97,7 +101,7 @@ export function createKpiWorkspace({ getSession, onUnauthorized, onForbidden = (
   }
   function check(form, label, name, checked = false) { const wrap = el('label', null, 'kpi-check'), input = el('input'); input.type = 'checkbox'; input.name = name; input.checked = checked; wrap.append(input, document.createTextNode(label)); form.append(wrap); return input; }
   function proofFields(form, existing) {
-    const p = existing || {}; field(form, 'Source system or document', 'proofSource', 'text', p.source || 'IMPUI');
+    const p = existing || {}; field(form, 'Source system or document', 'proofSource', 'text', p.source || 'Executive manual input');
     field(form, 'Record ID, document hash or evidence reference', 'proofRecord', 'text', p.record || '');
     field(form, 'What this evidence proves', 'proofDetail', 'text', p.detail || '');
   }
@@ -114,15 +118,32 @@ export function createKpiWorkspace({ getSession, onUnauthorized, onForbidden = (
     const numerator = field(form, d.unit === '%' ? 'Numerator: qualifying count or amount' : `Actual (${d.unit})`, 'numerator', 'number', o?.numerator ?? '');
     if (['sales', 'derek'].includes(d.profile) && ['USD', '%'].includes(d.unit)) numerator.removeAttribute('min');
     if (d.unit === '%') field(form, 'Denominator: complete population or plan', 'denominator', 'number', o?.denominator ?? '');
+    if (metricId === 'production.erp') {
+      field(form, 'Completion by Aug 3, 2026 (%)', 'milestoneCompletion', 'number', o?.milestoneCompletion == null ? '' : o.milestoneCompletion * 100).max = '100';
+      field(form, 'User adoption (%)', 'adoptionRate', 'number', o?.adoptionRate == null ? '' : o.adoptionRate * 100).max = '100';
+      field(form, 'On-time transactions (%)', 'onTimeTransactionRate', 'number', o?.onTimeTransactionRate == null ? '' : o.onTimeTransactionRate * 100).max = '100';
+    }
     check(form, 'Major error, top-ten complaint or key-customer exception', 'major', o?.majorError);
     check(form, 'The complete population and required source history have been checked', 'complete', o?.completeCoverage);
+    check(form, 'Use this manual actual instead of incomplete Acumatica data (explanation and approval required)', 'manualOverride', o?.useManualActual);
     field(form, 'Method, exclusions and reconciliation notes', 'notes', 'text', o?.notes || ''); proofFields(form, o?.evidence?.[0]);
     if ((o?.evidence?.length || 0) > 1) form.append(el('p', `${o.evidence.length} existing references will be preserved; the first reference can be updated below.`));
     submit(form, 'Save draft evidence', async data => {
       const refs = proof(data); if (o?.evidence?.length > 1) refs.push(...o.evidence.slice(1));
-      const saved = await api('observations', { metricId, period: period(), numerator: Number(data.get('numerator')), denominator: d.unit === '%' ? Number(data.get('denominator')) : null, majorError: data.has('major'), completeCoverage: data.has('complete'), notes: data.get('notes'), evidence: refs, expectedRevision: previous?.revision || 0 });
+      const saved = await api('observations', { metricId, period: period(), numerator: Number(data.get('numerator')), denominator: d.unit === '%' ? Number(data.get('denominator')) : null, ...(metricId === 'production.erp' ? { milestoneCompletion: Number(data.get('milestoneCompletion')) / 100, adoptionRate: Number(data.get('adoptionRate')) / 100, onTimeTransactionRate: Number(data.get('onTimeTransactionRate')) / 100 } : {}), useManualActual: data.has('manualOverride'), majorError: data.has('major'), completeCoverage: data.has('complete'), notes: data.get('notes'), evidence: refs, expectedRevision: previous?.revision || 0 });
       await load(); await evidence(saved.id);
     }); content.append(form, button('Back to scorecard', () => { currentView = d.profile; render(); }));
+  }
+  function liveEvidence(metric) {
+    const source = metric.liveEvidence; detail.replaceChildren(el('h2', metric.definition.label), el('p', `${source.source}. Checked ${new Date(source.checkedAtUtc).toLocaleString()}. ${source.recordCount} documents.`), el('p', source.note));
+    detail.append(table(['Invoice', 'Date', 'Customer ID', 'Net sales'], source.records.map(record => {
+      const url = new URL('https://imp-ttr.acumatica.com/Main');
+      url.search = new URLSearchParams({ CompanyID: 'International Media Products', ScreenId: 'AR301000', DocType: ({ Invoice: 'INV', 'Credit Memo': 'CRM', 'Debit Memo': 'DRM' })[record.type] || '', RefNbr: record.reference });
+      const href = safeSalesOrderLink(record.reference, url.href), label = href ? el('a', record.reference) : record.reference;
+      if (href) { label.href = href; label.target = '_blank'; label.rel = 'noopener noreferrer'; }
+      return [label, record.date, record.customerId, fmt(record.netSales, record.currency)];
+    })));
+    dialog.showModal();
   }
   async function evidence(id) {
     const record = await api(`evidence/${id}`); detail.replaceChildren(el('h2', 'Supporting evidence'));
@@ -134,7 +155,9 @@ export function createKpiWorkspace({ getSession, onUnauthorized, onForbidden = (
       if (metric) detail.append(el('p', `Actual ${fmt(o.denominator ? o.numerator / o.denominator : o.numerator, metric.unit)}. Numerator ${o.numerator}${o.denominator === null ? '' : `; denominator ${o.denominator}`}.`));
       else detail.append(el('p', `${o.category}: ${fmt(d.amount, 'USD')}. Machine ${o.machine || '—'}. Work date ${o.workDate || 'Not verified'}. Reference ${o.reference}.`));
       detail.append(el('p', `Status: ${d.status}. ${d.reviewerNote || ''}`), el('p', o.notes || ''));
+      if (o.useManualActual) detail.append(el('p', 'This entry requests a manual override of Acumatica actuals. It applies only after approval.', 'kpi-notice'));
       if (metric) detail.append(el('p', `Coverage: ${o.completeCoverage ? 'Submitted as complete' : 'Incomplete / partial'}. ${metric.openQuestion || ''}`));
+      if (metric?.id === 'production.erp') detail.append(table(['Required ERP condition', 'Recorded rate', 'Minimum'], [['Completion by Aug 3, 2026', fmt(o.milestoneCompletion, '%'), '80%'], ['User adoption', fmt(o.adoptionRate, '%'), '95%'], ['On-time transactions', fmt(o.onTimeTransactionRate, '%'), '90%']]));
       detail.append(table(['Source', 'Record', 'Supporting detail'], (o.evidence || []).map(p => [p.source, p.record, p.detail])));
       const review = el('form', null, 'kpi-form'); field(review, 'Review note', 'note');
       const decision = selectField(review, 'Decision', 'decision', [['Approved', 'Approve'], ['Rejected', 'Reject']]);
@@ -167,7 +190,7 @@ export function createKpiWorkspace({ getSession, onUnauthorized, onForbidden = (
   dialog.addEventListener('close', () => detail.replaceChildren());
   function sourcesView() {
     heading('Source records', 'Collect a complete, dated extract using your existing permissions. Collection saves an immutable evidence copy.');
-    const form = el('form', null, 'kpi-form'); selectField(form, 'Dataset', 'dataset', [['impui', 'IMPUI production and packing'], ['budgets', 'IMPUI budget inputs'], ['sales-history', 'IMPUI imported sales history'], ['invoices', 'Acumatica sales invoices'], ['shipments', 'Acumatica shipments'], ['receipts', 'Acumatica purchase receipts'], ['cases', 'Acumatica service cases'], ['inventory-audits', 'Acumatica inventory audits']]);
+    const form = el('form', null, 'kpi-form'); selectField(form, 'Dataset', 'dataset', [['invoices', 'Acumatica AR invoices and credit/debit memos'], ['shipments', 'Acumatica shipments'], ['receipts', 'Acumatica purchase receipts'], ['cases', 'Acumatica service cases'], ['inventory-audits', 'Acumatica inventory audits']]);
     submit(form, 'Collect source evidence', async data => { setStatus('Collecting complete source records…'); const extract = await api(`sources/${data.get('dataset')}`, period()); await load(); await evidence(extract.evidenceId); }); content.append(form);
     const extracts = events.filter(e => e.kind === 'source' && samePeriod(e.data.period));
     content.append(table(['Dataset', 'Records', 'Collected', 'Evidence'], extracts.map(e => [e.data.dataset, e.data.count, new Date(e.createdUtc).toLocaleString(), button('Inspect', () => evidence(e.id))])));
@@ -193,7 +216,7 @@ export function createKpiWorkspace({ getSession, onUnauthorized, onForbidden = (
     entryArea.append(form); content.append(entryArea, el('p', data.note, 'kpi-muted'));
   }
   function setupView() {
-    heading('Rules and source coverage', 'Workbook weights are fixed. Pending definitions need an explicit Executive decision with supporting evidence for this reporting period.');
+    heading('Targets, rules and source coverage', 'Maintain approved budgets and targets here. Fixed scoring formulas and weights are preserved. Actuals come from Acumatica when verified, otherwise from reviewed manual input.');
     const coverageDetails = el('details'); coverageDetails.open = true; coverageDetails.append(el('summary', 'Record data coverage and reconciliation'));
     const coverage = el('form', null, 'kpi-form'); selectField(coverage, 'Dataset', 'dataset', ['Financial', 'Production', 'Service', 'Commission'].map(x => [x, x]));
     selectField(coverage, 'Coverage', 'status', [['Partial', 'Partial / missing history'], ['Reconciled', 'Complete and reconciled']]); field(coverage, 'Coverage boundaries, company mapping and reconciliation method', 'notes'); proofFields(coverage);
@@ -201,14 +224,14 @@ export function createKpiWorkspace({ getSession, onUnauthorized, onForbidden = (
       const previous = latest('coverage', e => e.data.dataset === data.get('dataset') && samePeriod(e.data.period));
       await api('coverage', { period: period(), dataset: data.get('dataset'), status: data.get('status'), notes: data.get('notes'), evidence: proof(data), expectedRevision: previous?.revision || 0 }); await load();
     }); coverageDetails.append(coverage); content.append(coverageDetails);
-    const ruleDetails = el('details'); ruleDetails.append(el('summary', 'Approve an unresolved scoring rule'));
-    const rule = el('form', null, 'kpi-form'); const metrics = catalog.definitions.filter(d => d.rule === 'Pending');
+    const ruleDetails = el('details'); ruleDetails.append(el('summary', 'Configure a period target or resolve a pending rule'));
+    const rule = el('form', null, 'kpi-form'); const metrics = catalog.definitions.filter(d => ['Pending', 'Minimum', 'Maximum', 'Proportional', 'MaximumMajor'].includes(d.rule));
     const metric = selectField(rule, 'Metric', 'metricId', metrics.map(d => [d.id, `${catalog.profiles[d.profile] || d.profile}: ${d.label}`]));
-    selectField(rule, 'Points rule', 'rule', [['Minimum', 'Full points at or above target'], ['Maximum', 'Full points at or below target'], ['Proportional', 'Proportional, capped at the allocated points'], ['MaximumMajor', 'At or below target; major error earns zero'], ['DeductTwo', 'Deduct 2 points per infraction'], ['Packaging', 'Deduct 2 per error; major error earns zero']]);
+    const ruleChoice = selectField(rule, 'Points rule', 'rule', [['Minimum', 'Full points at or above target'], ['Maximum', 'Full points at or below target'], ['Proportional', 'Proportional, capped at the allocated points'], ['MaximumMajor', 'At or below target; major error earns zero'], ['DeductTwo', 'Deduct 2 points per infraction'], ['Packaging', 'Deduct 2 per error; major error earns zero']]);
     const target = field(rule, 'Target (percent metrics use human percentages, e.g. 26.5)', 'target', 'number');
-    field(rule, 'Zero-score floor, if applicable (same display unit)', 'floor', 'number', '', false); field(rule, 'Approved definition, account/population mapping and rationale', 'basis'); proofFields(rule);
-    const changeMetric = () => { const d = metrics.find(d => d.id === metric.value); target.value = d.unit === '%' ? d.target * 100 : d.target; }; metric.addEventListener('change', changeMetric); changeMetric();
-    submit(rule, 'Approve rule for this period', async data => { const d = metrics.find(d => d.id === data.get('metricId')), divisor = d.unit === '%' ? 100 : 1; const previous = latest('rule', e => e.data.metricId === d.id && samePeriod(e.data.period)); await api('rules', { metricId: d.id, period: period(), rule: data.get('rule'), target: Number(data.get('target')) / divisor, floor: data.get('floor') === '' ? null : Number(data.get('floor')) / divisor, basis: data.get('basis'), evidence: proof(data), expectedRevision: previous?.revision || 0 }); await load(); });
+    const floor = field(rule, 'Zero-score floor, if applicable (same display unit)', 'floor', 'number', '', false); field(rule, 'Approved definition, account/population mapping and rationale', 'basis'); proofFields(rule);
+    const changeMetric = () => { const d = metrics.find(d => d.id === metric.value), scale = d.unit === '%' ? 100 : 1; target.value = d.target * scale; floor.value = d.floor == null ? '' : d.floor * scale; floor.readOnly = d.rule !== 'Pending'; ruleChoice.disabled = d.rule !== 'Pending'; ruleChoice.value = d.rule === 'Pending' ? 'Minimum' : d.rule; }; metric.addEventListener('change', changeMetric); changeMetric();
+    submit(rule, 'Approve target for this period', async data => { const d = metrics.find(d => d.id === data.get('metricId')), divisor = d.unit === '%' ? 100 : 1; const previous = latest('rule', e => e.data.metricId === d.id && samePeriod(e.data.period)); await api('rules', { metricId: d.id, period: period(), rule: d.rule === 'Pending' ? data.get('rule') : d.rule, target: Number(data.get('target')) / divisor, floor: data.get('floor') === '' ? null : Number(data.get('floor')) / divisor, basis: data.get('basis'), evidence: proof(data), expectedRevision: previous?.revision || 0 }); await load(); });
     ruleDetails.append(rule); content.append(ruleDetails);
     content.append(table(['Metric', 'Points', 'Rule or open decision'], catalog.definitions.map(d => [d.label, d.points, d.openQuestion || d.formula]), '2026 scoring definitions'));
     const periodDetails = el('details'); periodDetails.append(el('summary', 'Close or reopen this reporting period'));
