@@ -27,3 +27,7 @@
 .sales-report-table td.report-customer-cell{padding-left:24px}
 
 .sales-report-scroll{max-height:560px;overflow:auto}.sales-report-table thead th{position:sticky;top:0;z-index:1;background:#fff}
+.sales-report-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+.sales-report-download { border: 1px solid #296348; background: #fff; color: #205139; padding: 9px 14px; border-radius: 6px; cursor: pointer; font: 600 14px Arial, sans-serif; }
+.sales-report-download:disabled { opacity: .6; cursor: wait; }
+.sales-report-export-status { font: 12px Arial, sans-serif; color: #526358; }

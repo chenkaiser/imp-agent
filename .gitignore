@@ -228,3 +228,4 @@ node_modules/
 .swa/
 .tools/
 test-results/
+web/vendor/

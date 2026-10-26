@@ -14,6 +14,8 @@ Start a new conversation for `Show invoiced sales for October 2026, by customer.
 
 Clarification check: `Show sales report for October.` Reply `2026`. The report must retain October.
 
+Click **Download Excel (.xlsx)** on a completed report to save the same full-name hierarchy and amounts. The worksheet preserves the reference's B2 title, B3:C5 filters, B7:C7 headers, indented customer rows, salesperson subtotals and grand total. Amounts are numeric Excel cells; the export is a snapshot of the displayed report, with its source and coverage note below the table. Different currencies use separate worksheets. No report data is sent to an export service, and downloading does not run another Acumatica query.
+
 ## Definitions and boundaries
 
 - Source: live Acumatica AR Invoice endpoint, not SO bookings or the spreadsheet.

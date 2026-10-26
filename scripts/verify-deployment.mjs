@@ -6,6 +6,7 @@ if (origin.protocol !== 'https:') throw new Error('Deployment verification requi
 const folder = new URL('../web/', import.meta.url);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const assets = (await readdir(folder)).filter(name => /\.(html|js|css|svg)$/.test(name));
+assets.push('vendor/exceljs.min.js', 'vendor/exceljs-LICENSE.txt');
 const expected = new Map(await Promise.all(assets.map(async name => [name, hash(await readFile(new URL(name, folder)))])));
 const config = JSON.parse(await readFile(new URL('staticwebapp.config.json', folder), 'utf8'));
 

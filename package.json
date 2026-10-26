@@ -10,9 +10,18 @@
     "check": "node --check web/lookup-warmer.js && node --check web/chat-autocomplete.js && node --check web/app.js && node --check web/lib.js && node --check web/personas.js && node --check web/message-format.js && node --check scripts/verify-deployment.mjs && node --check web/kpi.js && node --check web/kpi-view.js && node --check web/sales-access.js && node --check web/widget-auth.js && node --check extensions/ask-imp/background.js && node --check extensions/ask-imp/launcher.js && node scripts/sync-widget.mjs --check",
     "verify:deployment": "node scripts/verify-deployment.mjs",
     "package:widget": "node scripts/package-widget.mjs",
-    "package:store": "node scripts/package-widget.mjs --store"
+    "package:store": "node scripts/package-widget.mjs --store",
+    "prepare": "node scripts/prepare-report-export.mjs"
   },
   "devDependencies": {
+    "browserify": "17.0.1",
+    "esbuild": "0.25.12",
     "jsdom": "^29.1.1"
+  },
+  "dependencies": {
+    "exceljs": "4.4.0"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
   }
 }

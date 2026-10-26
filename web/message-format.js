@@ -1,3 +1,4 @@
+import { addSalesReportDownload } from './sales-report-export.js';
 // Literal text plus narrowly allowlisted Acumatica order links. Never interpret tool/model HTML.
 export function safeSalesOrderLink(label, raw) {
   try {
@@ -101,4 +102,5 @@ export function renderAssistantMessage(target, text) {
     fragment.append(paragraph);
   }
   target.replaceChildren(fragment); target.classList.add('formatted-answer');
+  if (reportMode) addSalesReportDownload(target);
 }
