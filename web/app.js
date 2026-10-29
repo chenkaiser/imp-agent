@@ -1,3 +1,4 @@
+import { createVoiceInput } from './voice-input.js';
 import { createChatAutocomplete } from './chat-autocomplete.js';
 import { createLookupWarmer } from './lookup-warmer.js';
 import { API_BASE } from './config.js';
@@ -26,13 +27,14 @@ const widgetSignIn = widgetMode ? createWidgetSignIn({
 const kpi = createKpiWorkspace({ getSession: () => session, onUnauthorized: () => signOut('Sign in with Acumatica to review KPI evidence.'), onForbidden: () => { kpiAccess = false; showSession(); }, onBack: () => showSession() });
 const salesAccess = createSalesAccessWorkspace({ getSession: () => session, onUnauthorized: () => signOut('Sign in with Acumatica to manage sales access.'), onBack: () => showSession() });
 const autocomplete = createChatAutocomplete({ input: $('question'), list: $('lookup-list'), chips: $('lookup-chips'), status: $('lookup-status'), getSession: () => session, enabled: () => activeSession(session) && !!personaId && personaId !== 'production' && allowedPersonaIds.has(personaId), onUnauthorized: () => signOut('Sign in again to use suggestions.') });
+const voice = createVoiceInput({ input: $('question'), button: $('voice-input'), cancelButton: $('voice-cancel'), status: $('voice-status'), enabled: () => activeSession(session) && !!personaId && allowedPersonaIds.has(personaId) && !controller, onActive: active => { $('send').disabled = active; } });
 const lookupWarmer = createLookupWarmer({ getSession: () => session, enabled: () => allowedPersonaIds.has('sales') || allowedPersonaIds.has('service') });
 try { session = JSON.parse(sessionStorage.getItem(SESSION)); } catch { sessionStorage.removeItem(SESSION); }
 function loginStatus(message, error = false) { $('login-status').textContent = message; $('login-status').classList.toggle('error', error); }
 function signOut(message = '') {
   widgetSignIn?.cancel();
   lookupWarmer.stop();
-  autocomplete.reset();
+  voice.cancel(); autocomplete.reset();
   allowedPersonaIds.clear();
   kpiAccess = false;
   kpi.deactivate(); salesAccess.deactivate();
@@ -55,6 +57,7 @@ async function loadPersonaAccess() {
   $('persona-status').textContent = '';
 }
 function showSession() {
+  voice.cancel();
   kpi.deactivate(); salesAccess.deactivate();
   const signedIn = activeSession(session);
   if (personaId && !allowedPersonaIds.has(personaId)) {
@@ -70,6 +73,7 @@ function showSession() {
   });
   $('workspace').hidden = !signedIn || !getPersona(personaId); $('login-screen').hidden = signedIn;
   $('persona-screen').hidden = !signedIn || !!getPersona(personaId);
+  voice.refresh();
   history.replaceState({}, '', widgetMode ? '/widget' : !signedIn ? '/login' : personaId ? '/chat' : '/personas');
   if (signedIn) {
     $('open-kpi').hidden = !kpiAccess;
@@ -87,13 +91,13 @@ function showSession() {
 $('open-kpi').addEventListener('click', () => {
   if (!activeSession(session)) { signOut('Sign in with Acumatica to open the Executive dashboard.'); return; }
   if (!kpiAccess) { showSession(); return; }
-  $('workspace').hidden = true; $('persona-screen').hidden = true; kpi.open();
+  voice.cancel(); $('workspace').hidden = true; $('persona-screen').hidden = true; kpi.open();
 });
 $('mobile-kpi').addEventListener('click', () => $('open-kpi').click());
 $('open-sales-access').addEventListener('click', () => {
   if (!activeSession(session)) { signOut('Sign in with Acumatica to manage sales access.'); return; }
   if (!allowedPersonaIds.has('it')) { showSession(); return; }
-  kpi.deactivate(); $('workspace').hidden = true; $('persona-screen').hidden = true; salesAccess.open();
+  voice.cancel(); kpi.deactivate(); $('workspace').hidden = true; $('persona-screen').hidden = true; salesAccess.open();
 });
 $('mobile-sales-access').addEventListener('click', () => $('open-sales-access').click());
 async function readError(response, fallback) {
@@ -162,14 +166,14 @@ $('mobile-new').addEventListener('click', () => $('new-chat').click());
 $('mobile-persona').addEventListener('click', () => $('change-persona').click());
 $('change-persona').addEventListener('click', () => {
   if (controller) return;
-  autocomplete.reset();
+  voice.cancel(); autocomplete.reset();
   personaId = null; personaStarted = false; $('messages').replaceChildren(); $('question').value = ''; $('welcome').hidden = false;
   conversationId = crypto.randomUUID(); showSession();
 });
 function selectPersona(id) {
   if (!activeSession(session)) { signOut('Please sign in with Acumatica to select a persona.'); return; }
   const persona = getPersona(id); if (!persona || !allowedPersonaIds.has(id)) return;
-  autocomplete.reset();
+  voice.cancel(); autocomplete.reset();
   personaId = id; personaStarted = false; conversationId = crypto.randomUUID();
   $('selected-persona').textContent = persona.label; $('header-persona').textContent = persona.label;
   $('welcome-description').textContent = persona.description;
@@ -185,10 +189,10 @@ document.querySelectorAll('[data-persona]').forEach(button => button.addEventLis
 }));
 $('new-chat').addEventListener('click', () => {
   if (controller) return;
-  autocomplete.reset();
+  voice.cancel(); autocomplete.reset();
   conversationId = crypto.randomUUID(); personaStarted = false; $('messages').replaceChildren(); $('welcome').hidden = false; $('question').value = ''; $('question').focus(); $('chat-status').textContent = 'Connected to IMP and Acumatica';
 });
-document.querySelectorAll('[data-question]').forEach(button => button.addEventListener('click', () => { autocomplete.reset(); $('question').value = button.dataset.question; $('question').focus(); }));
+document.querySelectorAll('[data-question]').forEach(button => button.addEventListener('click', () => { voice.cancel(); autocomplete.reset(); $('question').value = button.dataset.question; $('question').focus(); }));
 function addMessage(role, text = '') {
   const article = document.createElement('article'); article.className = `message ${role}`;
   const label = document.createElement('div'); label.className = 'message-label'; label.textContent = role === 'user' ? 'You' : 'IMP Agent';
@@ -197,16 +201,16 @@ function addMessage(role, text = '') {
   return { article, body };
 }
 function scrollLatest() { $('transcript').scrollTop = $('transcript').scrollHeight; }
-function busy(value) { autocomplete.suspend(value); $('send').hidden = value; $('stop').hidden = !value; $('new-chat').disabled = value; $('change-persona').disabled = value; $('mobile-persona').disabled = value; $('question').readOnly = value; $('chat-status').textContent = value ? 'Looking up your question…' : 'Connected to IMP and Acumatica'; }
+function busy(value) { voice.cancel(); voice.refresh(); autocomplete.suspend(value); $('send').hidden = value; $('stop').hidden = !value; $('new-chat').disabled = value; $('change-persona').disabled = value; $('mobile-persona').disabled = value; $('question').readOnly = value; $('chat-status').textContent = value ? 'Looking up your question…' : 'Connected to IMP and Acumatica'; }
 $('stop').addEventListener('click', () => controller?.abort());
 $('question').addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); $('chat-form').requestSubmit(); } });
 $('chat-form').addEventListener('submit', async event => {
-  event.preventDefault(); if (controller) return;
+  event.preventDefault(); if (controller || voice.active) return;
   const question = $('question').value.trim(); if (!question || question.length > 3600) return;
   if (!activeSession(session)) { signOut('Your session expired. Sign in with Acumatica to continue.'); return; }
   if (!getPersona(personaId) || !allowedPersonaIds.has(personaId)) { showSession(); return; }
   if (personaId !== 'production' && !autocomplete.validate()) return;
-  const selections = autocomplete.snapshot(); autocomplete.reset();
+  const selections = autocomplete.snapshot(); voice.cancel(); autocomplete.reset();
   $('welcome').hidden = true; addMessage('user', question); $('question').value = '';
   const answer = addMessage('assistant', 'Looking up your question…'); answer.article.classList.add('pending'); answer.article.setAttribute('aria-busy', 'true');
   controller = new AbortController(); busy(true); scrollLatest(); let text = '', done = false, failed = false;

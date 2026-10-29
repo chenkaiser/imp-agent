@@ -14,6 +14,38 @@ const tick = () => new Promise(resolve => setTimeout(resolve, 30));
 const json = data => new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } });
 const jwt = () => 'header.' + btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })) + '.sig';
 
+test('voice draft uses the existing authorized chat only after review and stops on conversation change', async () => {
+  const dom = setup('https://ask.impops.work/chat'); let recognition; const posted = [];
+  dom.window.webkitSpeechRecognition = class {
+    constructor() { recognition = this; }
+    start() { this.onstart?.(); }
+    stop() { this.onend?.(); }
+    abort() { this.aborted = true; }
+  };
+  sessionStorage.setItem('imp-agent.session', JSON.stringify({ id: 'u', name: 'User', role: 'manager', token: jwt(), accessToken: 'erp', expiresAt: Date.now() + 3600000 }));
+  globalThis.fetch = async (url, options) => {
+    if (url.endsWith('/config')) return json(config);
+    if (url.endsWith('/personas')) return json({ personas: ['production', 'service'], role: 'manager' });
+    if (url.endsWith('/lookups/warm') || url.includes('/logout')) return new Response(null, { status: 204 });
+    if (url.endsWith('/Chat')) { posted.push({ body: JSON.parse(options.body), headers: options.headers }); return new Response('data: {"type":"chunk","text":"Verified"}\n\ndata: {"type":"done"}\n\n', { headers: { 'Content-Type': 'text/event-stream' } }); }
+    throw new Error('Unexpected request');
+  };
+  await import('../web/app.js?test=voice-review'); await tick(); document.querySelector('[data-persona="production"]').click();
+  const input = document.getElementById('question'), form = document.getElementById('chat-form');
+  document.getElementById('voice-input').click(); recognition.onresult({ results: [[{ transcript: 'latest open production order' }]] });
+  form.dispatchEvent(new dom.window.Event('submit', { cancelable: true })); await tick(); assert.equal(posted.length, 0);
+  document.getElementById('voice-input').click(); input.value = 'show me the latest open production order';
+  form.dispatchEvent(new dom.window.Event('submit', { cancelable: true })); await tick();
+  assert.equal(posted.length, 1); assert.equal(posted[0].body.persona, 'production'); assert.match(posted[0].body.message, /show me the latest open production order/);
+  assert.equal(posted[0].headers['X-Acumatica-Access-Token'], 'erp');
+  document.getElementById('voice-input').click(); const late = recognition.onresult;
+  document.getElementById('new-chat').click(); late({ results: [[{ transcript: 'stale speech' }]] });
+  assert.equal(recognition.aborted, true); assert.equal(input.value, '');
+  document.getElementById('voice-input').click(); document.getElementById('change-persona').click(); assert.equal(recognition.aborted, true);
+  document.querySelector('[data-persona="service"]').click(); document.getElementById('voice-input').click();
+  document.getElementById('sign-out').click(); assert.equal(recognition.aborted, true); assert.equal(input.readOnly, false); dom.window.close();
+});
+
 for (const [role, allowed] of [['executive', false], ['systemadmin', false], ['sales', false], ['sales', true], ['executive', true]]) {
   test(`KPI dashboard requires verified capability: ${role}, KPI=${allowed}`, async () => {
     const dom = setup('https://ask.impops.work/kpi');

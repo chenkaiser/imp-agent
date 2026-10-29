@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Ask IMP \u2014 Acumatica Assistant",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minimum_chrome_version": "116",
   "description": "Read-only IMP Agent beside every Classic Acumatica screen. Existing account permissions apply.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApwPCOcnBlQ6d1BMrrxmbSzqzk0x4LED912HZUO4lJ8Hg+I0wK8MkVpjVwriSXfdYLy5VSkKcBI1SYUor5Q2/a+uKkcgwiP2xTfmeLTB99ZU+MTl5aVSefabodgcTC8iHrDfuSkiuuezN26DMsYPYA2ZaFKKteN86kWWngcbqzKAISYVhFXwZAzpTGl4TgLeyvVmNQjBQP1qYvGYPftClbfmC/fMrl9NianZ5mGhslbgHEdDJlxzKipDTBH8EhGn01k4Xlm9ojLy/1UddmjrzGr12FRbpzZsKiiMbAXCBHaDaOCCwPKJIKLLjkCJWyfk7ASNw79iyNrDJ3y8tNQKAXQIDAQAB",
