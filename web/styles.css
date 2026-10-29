@@ -35,3 +35,22 @@
 .voice-input{display:grid;place-items:center;flex-shrink:0;width:36px;height:36px;border:1px solid #dce3d3;border-radius:9px;background:#f5f8f0;color:#365344}.voice-input:hover{background:#e8efdf}.voice-input:disabled{cursor:not-allowed}.voice-input.recording{background:#fff0ed;border-color:#b55643;color:#a33b2e;animation:voice-pulse 1.5s ease-in-out infinite}.voice-cancel{border:1px solid #dce3d3;background:#fff;border-radius:8px;padding:6px 9px;font-size:11px;color:#516146}.voice-hint,.voice-status{font-size:10px;line-height:1.5;color:#778078;margin:8px 0 0}.voice-status:empty{display:none}.voice-status{color:#365344}@keyframes voice-pulse{50%{box-shadow:0 0 0 4px #b5564320}}@media(prefers-reduced-motion:reduce){.voice-input.recording{animation:none}}
 
 .sales-workbook-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.sales-workbook-tabs button{padding:8px;border:1px solid #bbc8c1;border-radius:5px;background:white;color:#205139;cursor:pointer}.sales-workbook-tabs button[aria-pressed="true"]{background:#205139;color:white}.sales-workbook-answer .sales-report-scroll{max-width:100%;max-height:620px}.sales-workbook-answer .sales-report-table{min-width:1100px}.sales-workbook-answer .sales-report-table th:first-child,.sales-workbook-answer .sales-report-table td:first-child{width:300px;min-width:280px}.sales-workbook-answer .sales-report-table th,.sales-workbook-answer .sales-report-table td{white-space:nowrap;text-align:right}.sales-workbook-answer .sales-report-table td:first-child,.sales-workbook-answer .sales-report-table th:first-child{text-align:left;white-space:normal}.sales-workbook-section[hidden]{display:none}
+
+/* Messaging layout: right-aligned personal bubbles and left-aligned agent cards. */
+.chat-main .transcript{background:#f6f8f7}
+.messages{max-width:1000px;display:flex;flex-direction:column;gap:24px;padding:10px 0 20px}
+.messages .message{display:grid;grid-template-columns:34px minmax(0,1fr);column-gap:10px;row-gap:5px;width:100%;min-width:0;margin:0;padding:0;border:0;background:none;line-height:1.65}
+.message-avatar{grid-column:1;grid-row:1 / 4;align-self:start;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#dceae3;color:#1c5942;font-size:11px;font-weight:700;user-select:none}
+.message-avatar svg{width:22px;height:22px}
+.messages .message-label{grid-column:2;margin:0 5px;font-size:11px;line-height:1.4;letter-spacing:0;text-transform:none;color:#5b6d63;font-weight:600}
+.messages .message-body{grid-column:2;min-width:0;max-width:100%;padding:15px 18px;border-radius:5px 20px 20px 20px;background:#fff;border:1px solid #e2e9e5;box-shadow:0 2px 5px #203f2d04}
+.messages .message.user{align-self:flex-end;grid-template-columns:minmax(0,1fr) 34px;width:fit-content;max-width:82%;color:#fff}
+.message.user .message-avatar{grid-column:2;background:#dce5f2;color:#315784}
+.messages .message.user .message-label{grid-column:1;text-align:right;color:#5b6d63}
+.messages .message.user .message-body{grid-column:1;background:#185a46;color:#fff;border-color:#185a46;border-radius:20px 5px 20px 20px;white-space:pre-wrap}
+.messages .message-usage{grid-column:2;margin:0 6px;font-size:11px;color:#6c7d72}
+.messages .message.error .message-body{border-color:#e4bdb7;background:#fff6f4;color:#962f27}
+.messages .message.pending .message-body{width:fit-content;color:#596f62}
+.chat-main .composer-area form{border-radius:24px;padding:16px 18px 12px;box-shadow:0 3px 18px #263f2810}
+.chat-main .send{border-radius:50%;width:36px;height:36px}
+@media(max-width:600px){.messages{gap:20px}.messages .message{grid-template-columns:28px minmax(0,1fr);column-gap:7px}.message-avatar{width:28px;height:28px;font-size:10px}.message-avatar svg{width:19px;height:19px}.messages .message.user{grid-template-columns:minmax(0,1fr) 28px;max-width:92%}.messages .message-body{padding:12px 14px}.messages .message-label{font-size:10px}}

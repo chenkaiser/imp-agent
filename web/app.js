@@ -195,9 +195,15 @@ $('new-chat').addEventListener('click', () => {
 document.querySelectorAll('[data-question]').forEach(button => button.addEventListener('click', () => { voice.cancel(); autocomplete.reset(); $('question').value = button.dataset.question; $('question').focus(); }));
 function addMessage(role, text = '') {
   const article = document.createElement('article'); article.className = `message ${role}`;
+  const avatar = document.createElement('div'); avatar.className = 'message-avatar'; avatar.setAttribute('aria-hidden', 'true');
+  if (role === 'user') {
+    avatar.textContent = (session?.name || 'You').trim().split(/\s+/).slice(0, 2).map(part => Array.from(part)[0]).join('').toUpperCase();
+  } else {
+    avatar.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M9 3h6"/><rect x="4" y="6" width="16" height="14" rx="5"/><path d="M1 11v4m22-4v4M9 16h6"/><circle cx="8.5" cy="11" r=".8" fill="currentColor"/><circle cx="15.5" cy="11" r=".8" fill="currentColor"/></svg>';
+  }
   const label = document.createElement('div'); label.className = 'message-label'; label.textContent = role === 'user' ? 'You' : 'IMP Agent';
   const body = document.createElement('div'); body.className = 'message-body'; body.textContent = text;
-  article.append(label, body); $('messages').append(article);
+  article.append(avatar, label, body); $('messages').append(article);
   return { article, body };
 }
 function scrollLatest() { $('transcript').scrollTop = $('transcript').scrollHeight; }
