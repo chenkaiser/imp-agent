@@ -1,6 +1,6 @@
 // Export only the already-authorized, displayed report. No new API calls or external services.
 let library;
-async function excelLibrary(doc) {
+export async function excelLibrary(doc) {
   if (doc.defaultView.ExcelJS) return doc.defaultView.ExcelJS;
   library ??= new Promise((resolve, reject) => {
     const script = doc.createElement('script'); script.src = '/vendor/exceljs.min.js';

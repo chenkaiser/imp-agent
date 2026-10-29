@@ -1,4 +1,5 @@
 import { addSalesReportDownload } from './sales-report-export.js';
+import { addSalesWorkbookDownload } from './sales-workbook-export.js';
 // Literal text plus narrowly allowlisted Acumatica order links. Never interpret tool/model HTML.
 export function safeSalesOrderLink(label, raw) {
   try {
@@ -37,7 +38,7 @@ function inline(parent, text) {
 
 function cells(line) {
   const values = []; let value = '', escaped = false;
-  const clean = raw => /^\s*?\u00a0\u00a0/.test(raw) ? '\u00a0\u00a0' + raw.trim() : raw.trim();
+  const clean = raw => (raw.match(/^[ \t]*(\u00a0{2,})/)?.[1] || '') + raw.trim();
   const input = line.trim().replace(/^\|/, '').replace(/\|$/, '');
   for (const ch of input) {
     if (escaped) { value += ch; escaped = false; }
@@ -54,10 +55,17 @@ const separator = line => tableLine(line) && cells(line).every(cell => /^:?-{3,}
 export function renderAssistantMessage(target, text) {
   const doc = target.ownerDocument, fragment = doc.createDocumentFragment();
   const lines = text.replace(/\r\n/g, '\n').split('\n');
-  const reportMode = lines[0] === '# Sales By Salesperson';
+  const workbookMode = lines[0] === '# Sales Reporting Workbook';
+  const reportMode = lines[0] === '# Sales By Salesperson' || workbookMode;
+  let workbookSheet = '', currency = '';
+  target.classList.toggle('sales-workbook-answer', workbookMode);
+  delete target.dataset.reportYear; delete target.dataset.reportMonth;
+  if (workbookMode) { target.dataset.reportYear = /^Year: (\d{4})$/m.exec(text)?.[1] || ''; target.dataset.reportMonth = /^Period: (\d{1,2})$/m.exec(text)?.[1] || ''; }
   target.classList.toggle('sales-report-answer', reportMode);
   for (let i = 0; i < lines.length;) {
     if (!lines[i].trim()) { i++; continue; }
+    if (workbookMode && /^## /.test(lines[i])) workbookSheet = lines[i].slice(3);
+    if (workbookMode && /^Currency: [A-Z]{3}$/.test(lines[i])) currency = lines[i].slice(10);
     if (reportMode && /^Year: \d{4}$/.test(lines[i]) && /^Period: \d{1,2}$/.test(lines[i + 1] || '') && lines[i + 2] === 'Territory: (All)') {
       const filters = doc.createElement('dl'); filters.className = 'sales-report-filters';
       for (const line of lines.slice(i, i + 3)) { const split = line.indexOf(': '); const label = doc.createElement('dt'), value = doc.createElement('dd'); label.textContent = line.slice(0, split); value.textContent = line.slice(split + 2); filters.append(label, value); }
@@ -65,10 +73,11 @@ export function renderAssistantMessage(target, text) {
     }
     if (tableLine(lines[i]) && separator(lines[i + 1] || '')) {
       const headers = cells(lines[i]); i += 2;
-      const templateTable = reportMode && headers.length === 2 && headers[0] === 'Salesperson' && headers[1] === 'Total Sales Amount';
+      const templateTable = workbookMode || reportMode && headers.length === 2 && headers[0] === 'Salesperson' && headers[1] === 'Total Sales Amount';
       const wrapper = doc.createElement('div'); wrapper.className = 'answer-table-scroll';
       wrapper.tabIndex = 0; wrapper.setAttribute('role', 'region'); wrapper.setAttribute('aria-label', 'Results table');
       const table = doc.createElement('table'), head = doc.createElement('thead'), headRow = doc.createElement('tr');
+      if (workbookMode) { table.dataset.reportSheet = workbookSheet; table.dataset.currency = currency; }
       if (templateTable) { table.className = 'sales-report-table'; wrapper.classList.add('sales-report-scroll'); }
       for (const label of headers) { const th = doc.createElement('th'); th.scope = 'col'; th.textContent = label; headRow.append(th); }
       head.append(headRow); table.append(head);
@@ -77,7 +86,7 @@ export function renderAssistantMessage(target, text) {
         const row = doc.createElement('tr');
         for (const [column, value] of cells(lines[i++]).entries()) { const cell = doc.createElement('td');
           const customer = templateTable && column === 0 && value.startsWith('\u00a0\u00a0');
-          if (customer) cell.classList.add('report-customer-cell');
+          if (customer) { cell.classList.add('report-customer-cell'); if (workbookMode) cell.dataset.reportIndent = String((value.match(/^\u00a0+/)?.[0].length || 0) / 2); }
           inline(cell, customer ? value.slice(2) : value); row.append(cell);
         }
         body.append(row);
@@ -102,5 +111,6 @@ export function renderAssistantMessage(target, text) {
     fragment.append(paragraph);
   }
   target.replaceChildren(fragment); target.classList.add('formatted-answer');
-  if (reportMode) addSalesReportDownload(target);
+  if (workbookMode) addSalesWorkbookDownload(target);
+  else if (reportMode) addSalesReportDownload(target);
 }
