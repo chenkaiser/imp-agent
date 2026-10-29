@@ -104,7 +104,10 @@ export function buildSalesReportWorkbook(ExcelJS, report) {
     });
     const noteRow = headerRow + data.rows.length + 3;
     sheet.mergeCells(noteRow, 2, noteRow, count + 1); sheet.getCell(noteRow, 2).value = report.notes;
-    sheet.getCell(noteRow, 2).alignment = { wrapText: true, vertical: 'top' }; sheet.getRow(noteRow).height = 110;
+    sheet.getCell(noteRow, 2).alignment = { wrapText: true, vertical: 'top' };
+    const noteWidth = Math.max(40, Array.from({length: count}, (_, i) => sheet.getColumn(i + 2).width || 15).reduce((a,b) => a+b,0) * .85);
+    const noteLines = report.notes.split('\n').reduce((total,line) => total + Math.max(1,Math.ceil(line.length / noteWidth)),0);
+    sheet.getRow(noteRow).height = Math.min(409, Math.max(70,noteLines * 14 + 12));
     sheet.views = [{ state: 'frozen', xSplit: 2, ySplit: headerRow }];
     sheet.pageSetup = { orientation: index === 4 ? 'portrait' : 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: `1:${headerRow}` };
   }
